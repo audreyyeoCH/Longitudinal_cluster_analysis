@@ -1,0 +1,96 @@
+% LaTeX file for Chapter 04
+<<'preamble04',include=FALSE>>=
+library(knitr)
+opts_chunk$set(
+    fig.path='figure/ch04_fig',
+    self.contained=FALSE,
+    cache=FALSE
+)
+@
+
+
+<<loaddfs, include=TRUE, error=FALSE, message=FALSE, warning=FALSE, eval = TRUE, echo = FALSE>>=
+	load("../Data/df.Rda")
+	load("../Data/df_longdf.Rda")
+   load("../Data/widedf0.Rda")
+   load("../Data/kml2lmer.Rda")
+   load("../Data/kml4lmer.Rda")
+
+@
+
+\chapter{Discussion and Outlook}
+% intro
+The analysis of disease progression of pododermatitis over time is a curious example of longitudinal cluster analysis. To understand the risk factors in a clustered setting, I performed the analysis by stratification by area and by two and four \texttt{kml} partitioning. This is followed by a mixed model analysis. A check of robusticity of \texttt{kml} was performed after systematic random deletion of data, where the deletion was performed prior and post imputation.
+
+The correlation between pododermatitis of the two regions of the plantar surface of the does' hind paws is low. In addition, since factors affect mid-paw scores are not all the same to ones affecting heel scores, I did not take the mean of the scores for both regions and chose to focus on one region. In addition, a naive linear model summary output show that there is evidence of significant association between the two scores. The risk factors for both outcome variables could be more common than suggested by the directed acyclic graph.
+% as in the precedent study, temperature only contributes to increase in mid-paw scores which suggests that mid-paw scores can also be investigated for a future study.  
+
+The concordance between the four partition and four areas were not marked for any confident conclusions, thus I do not confirm any homogeneity between the areas and partitions. The concordance between the two and four partitions were neither marked.
+
+A note about the mixed model choice of variables. The choice of ear tag, age (age by ear tag), weight by ear tag and area as random variables is from the belief that these may have individual variations and merit a respective intercept.
+
+\section{Stratification by area}
+
+Winter months show elevated scores for most barns. The decrease of scores seem to be greater in the first six months, followed by the second six months which suggests that factors observed within certain visits could have a progressive affect on the does later on. The direct associations of environmental factors to mean heel scores are difficult to confirm as well. Elevated scores are also observed with lower temperatures and often, highest relative humidity, except for barn 4 for the latter factor. Most does are in the pregnancy or lactation state and possess clean paws which means that these scores change while other factors are relatively constant. Claw lengths however, vary across visits and longer claws observed in summer months preceding the winter months could be investigated further to explain elevated scores are stratified by area. 
+% % Area vs score
+
+
+% This could suggest that temperature may may be associated with the healing of pododermatitis at least for the first six months of this study as scores seem to increase after March 2017 for Barns 2 and 3 or a slight worsening seen in the smaller decrease of scores in Barns 1 and 4, though there is no statistical evidence. 
+
+% The relative humidity for barn 4 is lowest in the winter months by approximately 10\% to 20\% when compared to the other barns. The trend of mean scores for barn 4 when compared to other barns is unremarkable even though it is the only barn with a negative cubic trend as an entire trajectory and it is difficult to infer the effect on its unique relative humidity or interpret its peaks and troughs.
+% Age and weight
+Age and weight stratified by area have a non-linear increase with time due to new entries of does. Since non-moribound does were chosen, we cannot know if the does that do not reappear in following time points within the study were moribound looking but some positive selection bias cannot be ruled out due to the debilitating effects of pododermatitis to the welfare of rabbits. Age, through weight has a positive impact on mean heel scores \citep{Ruchti_2019} and it can be seen that whilst age increases with subsequent visits, scores still improved between certain time points (see Figure~\ref{meanscore}). Weight increases during the winter months, a factor found to be impactful by the precedent study \citep{Ruchti_2019}. However, scores show a mixed trend after visit 6 to 13 even though weight decreases between visit 1 and 13.
+% reproductive state cleanliness #A higher number of missing values about the reproductive state is concerning to this analysis.
+% Most does are lactating or are pregnant and not in a non-pregnant state across visits and there are no notable trends during the winter or summer months. The precedent study did not show an association of these factors to the score, but rather that mean heel scores influences reproductive state \citep{Ruchti_2019}. The higher number of does that are lactating and or pregnant can suggest good socialisation behaviours or general welfare of rabbits such as cleanliness, good mobility and diet. Furthermore, the higher proportion of paws found to be "clean" is also consistent to this.
+% claw length
+The trend of claw length appears to be similar across most barns, with normal length claws moreso from winter on. The directed acyclic graph taken from \citet{Ruchti_2019} suggests that claw length has a positive impact on mean heel scores but not on mean mid-paw scores. This could suggest more investigations of biomechanical factors on this disease could be meaningful. Furthermore, mean heel scores do increase during winter, when normal length claws are in higher proportions. Since pododermatitis takes time to develop, some variables may be a factor that progresses the disease over time but not immediately observed in the summer months. Furthermore, longer claws may reflect older age of rabbits which is also higher during the winter months. 
+
+% The mean heel scores decreases when it is stratified by area or partitioned (exception to partition D after \texttt{kml} implementation due to a resulting smaller sample size). Thus, a method like k-means clustering may decrease the variance and improve the understanding of covariates at play, which is especially useful for observations that have time trajectories.
+
+% Upon visualization of stratified and clustered subsets, cyclic trends could not be established to rationalise likewise cyclic modeling fitting. This study proceeded with a centroid-based sphrerical inclusion of data points known as k-means clustering more specifically with the \texttt{kml} tool \citep{Genolini_2010}.
+% correlation between heel and mid paw scores
+% Pododermatitis occurs in the plantar surface of the rabbit's paw. It is a result of friction and suboptimal locomotion as a result of risk factors that researcher and clinicians have before approximated (\citet{Ruchti_2019}, \citet{Mancinelli_2010} \& \citet{Seaman_2010}). 
+% The choice of mean heel scores over mean mid-paw scores is contentious for the research question. The precedent study showed that the factors affecting the former, are different from factors that affect the latter, as seen in Figure~\ref{dag} taken from \citet{Ruchti_2019}. Furthermore, the choice was based on a low pearson's correlation of 0.13, including a positive, linear-like relationship between increase of heel and increase of mid-paw scores on visual inspection.
+
+% which can cause a peak of mean heel scores during the winter time, in the light that most paws are assessed as clean and most rabbits are pregnant due, likely due to farmers ensuring at least one buck to each pen with does \citet{Ruchti_2019}.
+% kml two partitions
+\section{Partitions from \texttt{kml} implementations and mixed model}
+
+Whilst the visual inspection of scores show the improvement of disease status per barn area when visit 1 is compared to visit 13, the same inspection in the two and four \texttt{kml} partitions show only marginal.  The downside of the four partition case is that sample counts decrease with the more latter partitions (in this case partition D) and standard errors increase as a result. Furthermore, in both two and four partitions, there is no marked peak during the winter months as is observed in some barns in the stratification by area analysis. What is helpful is the separation seen in the two partition as one trajectory is above score four and the other below as it is known that score four and above is a disease state associated with pain. Mixed model analysis show that there are no variables that show a significant impact on scores, neither do any partition. 
+
+Currently generalised linear model assessment showed that groups have evidence of difference with respect of mean heel scores between partitians, thus \texttt{kml} was successful in creating groups that have evidence of significant difference. In the two and four partition case, only the visit variable had evidence of significant negative impact on the mean scores. This was estimate was \Sexpr{kml2lmer[2]} and  \Sexpr{kml4lmer[2]} respectively. In the both cases, the estimate is below 1. Consultations with clinicians could aid in understanding the contextual value of this estimate.
+% merely \Sexpr{length(df_longdf[df_longdf$kmlclusters2 == c("D"),])} 
+%mixed model kml
+% The evaluation of the risk factors with linear mixed models did not confirm evidence of significance for all the factors of the precedent study except visit for the data set stratified by area and for the partitioned data sets. The variable visit has evidence of significant impact albeit estimates are marginal and 
+% This is the case for the the non-partitioned observations, where time and weight showed evidence of significance, though the confidence interval for the range of which the visit estimates its 95\% confidence, contains the value zero, rendering only weight, the only factor found to have statistical evidence for significant effect on increasing pododermatitis score. 
+% Thus the negative quadrative trend of weight over the time points, resulting in higher overall weight for does at the end of the study seem to have a marginal increase effect on scores, from the mixed model analysis with and without \texttt{kml} implementation. 
+% Even though the confidence interval of weight contains a zero, one could argue that no change is also regarded as clinically meaningful result.
+% repro% cleanliness
+With respect to reproductive state, since only few does were not-pregnant in the two and four partitions across visits and most paws were clean, to control for weight and behavioural repertoires related to pregnancy and thereafter on welfare, further studies can include some of these important observations to control for hormonal influences in socialisation behaviours and the interaction of does in group housing.
+% there are no changes to the inference that is possible after \texttt{kml} has been implemented. This is also reflected in the original dataset, barring all missing values of reproductive state of these does. One does question the rate of impotence amongst bucks as at least one buck is contained in each pen that is studied \citet{Ruchti_2019}, 
+% claw length
+% Claw length has a positive multinomial relationship to mean heel scores and age from the precendent study. The higher proportion of normal scores in the winter months and higher positive mean scores around the winter months is disagrees to this finding. 
+Of the time factor, since this disease develops over time, and has higher proportion of ``too long'' claws during the summer months across all partitions, a similar interpretation could be held from the one of scores stratified by area. The higher proportion of ``too long'' scores reflected during summer, suggests that claw length may be a time dependant factor, although this is not a statistically significant result according to the mixed modeling.
+
+It is important to note that whilst we are able to analyse scores of full trajectories in the \texttt{kml} partitions due to imputation, the facility did not impute all other covariates per time point. This meant that partitioned data set had the same number of covariate observations with the partitioned data sets. This does not strengthen the mixed model analysis, however if future studies can recruit the same rabbit in all or most time points, there could be more covariates that could be used in a mixed model analysis. 
+% kml partitions and robusticity
+% With regards to missing values, it was found that there were \Sexpr{length(unique(df$EarTag))} rabbits with trajectories that don't include all time points and sometimes reappeared in the study. Thus, to complete the doe's trajectory, imputation was used based on the existing data points of that individual doe's trajectory of mean heel scores.
+% When the imputation was performed, \Sexpr{length(widedf0)*length(unique(df$visit))-(dim(df)[1])} values were replaced. This represented 164
+% \Sexpr{(length(widedf0)*length(unique(df$visit))-length(df)) / (dim(widedf0)[1]*length(unique(df$visit)))} of the data imputed.
+% \Sexpr{dim(widedf0)[1]}
+\section{The robusticity of \texttt{kml} implementation}
+% When random deletion of 1\%, 5\%, 10\% and 20\% were performed, the mean squared errors of the scores for each of the remaining data were close to zero. At most, in the most latter case, if one in five rows were deleted, each partitian deviated away from 
+% \Sexpr{length(widedf0)*length(unique(df$visit))} 
+Even though up to half the data was imputated, the performance of \texttt{kml} could be assessed through systematic random deletions of observations. I performed the systematic random deletion prior and after imputation of data and \texttt{kml} partitioning in view that it could aid future studies decide if sampling every fifth observation could still reached a similar, clinically acceptable result, for example. A note about sample size, for the pre-imputation experiment, sample sizes are stable due to imputation and the loss of observations are possible from deletion of entire ear tags that do not undergo imputation. However, for the post-imputation experiment, the deletion of data was implemented after imputation and subsequent \texttt{kml} partitioning which is why the sample sizes are smaller than the former experiment. 
+
+It is important to recall that for the \texttt{kml} facility, full trajectories are required which is role of imputation. Thus I would recommend robusticity checks where imputation required is minimal. 
+
+With systematic random deletion on the current rate of imputation, it appears that \texttt{kml} performs similarly when trajectories are removed at magnitude 1-10\%. For example, shifts in trajectories are marginal and do not change the disease states of pododermatitis. This is no surprise as almost half of the data was imputated with the trajectory mean. As such I am cautious to use the paritioned dataset to make confident inferences about the risk factors influencing neither partitions nor trajectories. 
+% If full trajectories are assumed to be present and require no imputation, it cannot be further inferred whether \texttt{kml} would prove robust for sample sizes different to this scenario with the number of missing values and imputation required. What could improve for a further study is to decrease the number of imputated values needed. With respect to missing values, the validity of each cluster may also suffer if trajectories that have to be imputed are not necessarily representative of reality. 
+% However, the experiments done to assess the robusticity could aid those interested in using the package if they had orginally a full trajectory of individuals, but only a sample of them (such as 1 in 10 of their population) and their disease score ranges would be similar to the one of pododermatitis.
+% % downside of kml
+	The \texttt{kml} suffers from some drawbacks as cited as well in \citet{Genolini_2010}. For instance, there are no formal tests to evaluate the validity of the partitions. Furthermore, the number of clusters needs to be determined a priori, and the starting condition determined at random. In the optimization step, scores converges to a local maximum however one cannot be sure that this is a local or global maximum, therefore, whether the best partition has been found. To this point, if the number of redrawings (iterations) needed until the optimum is reached exceeds their maximum of 20 \citep{Genolini_2010}, this could create uncertainty in whether a global maximum and or the best partitians are created. The quality criterion which is not extensively examined in this study could be used to compare the quality of partitions without nominating number of clusters to aid with this uncertainty. I would recommend a coupling of this and designing a study with fuller trajectories.
+% % further
+Further outlook to this study could also include male rabbits and assess their progression of pododermatitis and their reproductive state to control for mating potential as at least on buck is expected in each pen evaluated \citep{Ruchti_2019}. This would enable a possible comparison of weight and reproductive state, amongst all other factors except number of kindlings. The socialisation of rabbits in group housing could be studied with other variables not used in this study, such as proportion of wound bites and descriptives on the pododermatitis. It is also a valid question of repeating the entire analysis with mean mid-paw scores, as other factors associated on heel scores are not associated on mid-paw scores, according to the dag. Generalized linear models can still assess the between \texttt{kml} partitians difference to check for evidence for statistically different partitions. The convenience of imputation of missing data to create trajectories through $k$-means clustering, followed by statistical analysis on the partitioned data, may also suffer from the lack of known time-dependant covariates. Different ways of replacing missing values could also be examined. The \texttt{kml} facility also provides other manipulations and options on the algorithm which could be tested for its performance in pododermatitis scoring.
+
+\clearpage

@@ -1,0 +1,103 @@
+% LaTeX file for Chapter 01
+<<'preamble01',include=FALSE>>=
+library(knitr)
+opts_chunk$set(
+    fig.path='figure/ch01_fig', 
+    self.contained=FALSE,
+    cache=TRUE
+)
+@
+
+<<loading important packages, include = FALSE>>=
+library(kml)
+library(readxl)
+library(reshape)
+library(reshape2) #for dcast
+library(tidyverse)
+library(janitor)
+library(pastecs) # for stat.desc
+library(beeswarm)
+library(viridis)
+library(RColorBrewer)
+library(knitr)
+library(ggplot2)
+library(ggmosaic)
+## Additional settings
+cols <- brewer.pal(3, "Set1")
+@
+
+<<loading data, include = FALSE>>=
+load("../Data/df.Rda")
+@
+\chapter{Introduction}
+Primary clinical assessment of rodents, birds and rabbits often begin with assessment of the organism's morphology. A common dermatological problem among rabbits are pressure sores on hocks and feet, otherwise known as pododermatitis \citep{Mancinelli_2014}. This skin disease starts with a reddish area, loss of fur, progressing to breakage of the does' skin barrier integrity, chronic granulomatous and ulcerative dermatitis \citep{Ruchti_2019}. Clinicians approximate several factors that contribute to this painful condition, such as age, claw length and environmental factors such as temperature and humidity (\citealp{Drescher_1996}, \citealp{Martorell_2014}, \citealp{Rommers_1996} and \citealp{Rosell_2009}). Pododermatitis has several secondary effects including poor pedal function and severe loss of quality of life for the animal resulting in general poor welfare, sometimes relieved by premature slaughter \citep{Olivas_2013}. Categorically, the risk factors of this disease include
+\begin{itemize}
+	\item anatomical factors: claw length
+	\item physiological factors: age, parity, body weight, reproductive state, hybrid
+	\item environmental factors: cleanliness, moisture of paws, temperature and humidity
+\end{itemize}
+
+\begin{figure}
+<<grouphousing, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, fig.height=5, fig.width=7>>=
+knitr::include_graphics("../Figures/ch01_fig2.pdf")
+@
+\caption{Example of group housing systems in a pen with plastic flooring and elevated areas taken from \citet{Ruchti_2019}.}\label{grouphousing}
+\end{figure}
+
+While genetic factors predetermine anatomical and physiological factors, housing factors need to be considered. Some literature about the disease of pododermatitis is based on European housing styles with mesh floors, as cited in \citet{Ruchti_2019}.
+In Switzerland, group housing of rabbits occur in pens with litter and plastic slats that allows positive social contacts \citep{Seaman_2018}. The precedent study by \citet{Ruchti_2018} reported a range of disease scores in these types of housing and an incidence rate between four and 49 \% in their cross sectional analysis in Switzerland. An example of a group housing pen is seen in Figure~\ref{grouphousing}. A multivariable analysis, with implementation of the additive Bayesian network or \texttt{abn} package \citep{Kratzer_2019} has subsequently been performed and potential risk factors and their associations were visualised in a directed acyclic graph (dag) seen in Figure~\ref{dag} taken from the \citet{Ruchti_2019} study. This study noted positive effects of temperature, humidity and weight whereas negative effects of age (through weight) in mean pododermatitis scores and cleanliness. Multinomial effects from claw length were found to influence scores \citep{Ruchti_2018}. Age appears to play an indirect effect on weight and hybrid which directly affects the heel's disease severity. In addition, claw length has a multinomial effect on age and score. I use the data from the precedent study to understand the longitudinal influence of these factors in a clustered setting, thus my study aims to
+\begin{itemize}
+	\item understand which factors influence the healing process over thirteen time points and furthermore,
+	\item apply longitudinal cluster analysis in order to understand evolution of clusters (disease states) and time dependences.
+\end{itemize}
+
+\begin{figure}
+\small
+<<dag, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, fig.height=2, fig.width=3>>=
+knitr::include_graphics("../Figures/ch01_fig4dag.pdf")
+@
+\caption{Directed acyclic graph (dag) from \texttt{abn} taken from \citet{Ruchti_2018}.}\label{dag}
+\end{figure}
+
+% \begin{figure}\label{visual}
+% <<visual, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, fig.height=2, fig.width=3, fig.align="centre">>=
+% knitr::include_graphics("../Figures/ch01_figpodovisual.pdf")
+% @
+% \caption{Visual analogue scale to score Pododermatitis by \citet{Drescher_1996}.}
+% \end{figure}
+
+\section{Statistical considerations}
+
+As mentioned, given that data is available across time points, it is possible that out of these four unique areas (barn 1, barn 2, barn 3 and barn 4), meaningful cohort affects can be found with respect to mean score and mean score trajectory over time. Several \texttt{R} packages to clustering longitudinal are available including \texttt{longclust}, a method based on a mixture of multivariate t or Gaussian distributions, model-based clustering in \texttt{mclust}, classification of trajectories based on selected factors in \texttt{traj} and k-means design to cluster \texttt{kml}. Amongst these approaches, this study will use the k-means approach.
+
+\section{K-means longitudinal cluster analysis}
+
+The idea behind $k$-means clustering is to use a centroid based clustering methods to spherically include data points around a single mean representing $k$ units or observations where $k$ is the number of optimal clusters. K-means clustering was implemented to determine the optimal number of $k$ clusters or partitions using an available \texttt{R} package called \texttt{kml} of version 2.4.1. The \texttt{kml} approach is a hill-climbing alogrithm which always verges towards an optimum. 
+% It is assumed that points within one trajectory are correlated and these distinct categories can be used in a regression model where dependant and independant variables can be compared \citep{Genolini_2010}.
+
+The features of \texttt{kml} include \citep{Genolini_2010} :
+\begin{itemize}
+	\item observations are not required to be based on a parametric distribution. This could be advantages if no prior information is available,
+	\item since it requires iterations to optimise the means per cluster, it is likely to be robust with regards to numerical convergence,
+	\item no assumption on the shape of the trajectory is assumed as partitioning the centroid is exploratory until the centroid is optimised,
+	\item the formation of k-means clusters in a longitudinal context is independant from time scaling.
+\end{itemize}
+
+\section{Mixed model approaches to optimally partitioned clusters in longitudinal setting}
+
+In classical regression analysis, observations are assumed to be independant from one another. Since subjects of these observations occur in a several time points in a longitudinal setting, an adjustment of dependant observations need to be considered. One such solution is to treat their baseline values as different between subjects, such that they are random and their intercepts differ \citep{Tw_2013}. This is in contrast to fixed effects where the variance is shared across all subjects \citep{Tw_2013}.
+% In addition to the random intercepts, longitudinal data as oppose to cross-sectional studies As certain variables need to have their own intercept to represent the different starting values of, for example, each subject's age. Thus these variables have to be treated as random and their intecepts differ
+
+In a longitudinal setting, a mixed model can study the cohort and age (or time) effects and thus is an effective means of studying change \citep{Diggle_2013}. The setting of this longitudinal study requires optimal partitions to assess the effect of cohort and these partitions will be created by \texttt{kml} implementation. Thereafter, the time component can be assessed with other important covariates in a mixed model analysis. Since the same individuals are evaluated over time (but not for all time points), the assumption that individual observations are independant to one another will not hold. Thus each individual will have a random intercept as they share the same baseline values. For that same reason, age and weight variables were grouped per individual and was treated as a random variable.
+
+\section{Data Collection}
+ 
+The following information about how data was collected is cited from the precedent study \citep{Ruchti_2019}.
+
+Data was collected via several visits between July 20th, 2016 and June 30th, 2017 on three commercial Swiss rabbit farms with group housing of breeding does (www.schweizerkaninchen.ch). These farms had animal friendly housing label BTS (https://www.kontrolldienst-sts-ch/html/inde x.php/de/coop-nts-kanichen). Visits were made once every four weeks for a period of two days, and thirteen visits were made. In each farm, 67 does were initially caught in a stratified manner. At least one doe per pen was chosen, bar the rabbits which appear in moribound state which were subsequently reported to the farmer. Scoring is performed on the middle (``mid-paw'') and mean heel palmar or plantar surface by manual palpatation (without gloves) by one person and the doe was immediately return to its respective pen after evaluation. A headlamp was used to control for consistent lighting. Environmental factors were scored by a randomisation of pen number per farm.
+
+% controlling for the location of the animal within the pen and choosing at least one doe per pen.
+
+\section{Data Preparation}
+
+One ear tag was found to have no input values for the concerned scores. This row was removed from the dataset. There were six ear tags that were the same in barn 1 and barn 2 which belong to separate farm locations, and this was renamed such that each ear tag in the study was unique and its individual trajectory can be clarified. There were six different categories for claw length, for simplicity, this was recorded by the predecessor as ``normal'' or ``too long''. Months were refactored in ordered visits 1 to 13. All other ordinal variables were refactored such as reproductive state. The F1 hybrid was replaced with its alternative name, Hylamax. The score of pododermatitis were from zero to ten, and rescaled from one to six, thus often scores are represented with two decimal places and three significant figures. Consistent with the predecessor, I created a new variable called ``meanPDheel'' as a mean value of the left and right disease scores of each of heel and mid-paw. The choice of heel or mid-paw scores as dependant variable was based on the higher number of complete cases, found to be in the mean heel score data.

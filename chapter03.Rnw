@@ -1,0 +1,1601 @@
+% LaTeX file for Chapter 03
+<<'preamble03',include=FALSE>>=
+library(lme4)
+library(ggplot2)
+library(ggmosaic)
+library(knitr)
+library(janitor)
+library(kableExtra)
+library(tableone)
+library(tidyverse)
+library(ggpubr)
+library(cowplot)
+opts_chunk$set(
+    fig.path='figure/ch03_fig',
+    self.contained=FALSE,
+    cache=FALSE
+)
+options(knitr.table.format = "latex")
+
+@
+
+<<loaddfs, include=TRUE, error=FALSE, message=FALSE, warning=FALSE, eval = TRUE, echo = FALSE>>=
+	load("../Data/df.Rda")
+	load("../Data/tab_area_visit.Rda")
+	load("../Data/df_longdf.Rda")
+  load("../Data/tab_area_visit.Rda")
+  load("../Data/widedf0.Rda")
+  load("../Data/con_areakml2.Rda")
+  load("../Data/kml24.Rda")
+  load("../Data/fourkmlcounts.Rda")
+  load("../Data/twokmlcounts.Rda")
+  load("../Data/area2kml.Rda")
+  load("../Data/area4kml.Rda")
+  load("../Data/conkml.Rda")
+  load("../Data/twokmlcounts.Rda")
+  load("../Data/fourkmlcounts.Rda")
+  load("../Data/loss_long.Rda")
+  load("../Data/op.Rda")
+	load("../Data/opkml4counts.Rda")
+	load("../Data/fp.Rda")
+	load("../Data/fpkml4counts.Rda")
+	load("../Data/tp.Rda")
+	load("../Data/tpkml4counts.Rda")
+	load("../Data/twentyp.Rda")
+	load("../Data/twentypkml4counts.Rda")
+	load("../Data/tab_loss0.Rda")
+	load("../Data/er_long0.Rda")
+	load("../Data/opkml4counts0.Rda")
+	load("../Data/fpkml4counts0.Rda")
+	load("../Data/tpkml4counts0.Rda")
+	load("../Data/twentypkml4counts0.Rda")
+  load("../Data/df_onepercentloss0.Rda")
+  load("../Data/df_fivepercentloss0.Rda")
+  load("../Data/df_tenpercentloss0.Rda")
+  load("../Data/df_twentypercentloss0.Rda")
+  load("../Data/fpkml4counts0.Rda")
+  load("../Data/tpkml4counts0.Rda")
+  load("../Figures/tab_loss.Rda")
+  load("../Data/tab_loss0.Rda")
+  load("../Figures/kmllmertab.Rda")
+@
+
+\chapter{Results}
+
+This chapter will include results of exploratory data analysis (EDA) of data prior and after \texttt{kml} implementation. Following this, it will include the performance results of the partitions for pre and post imputation robusticity checks.
+
+%%%%%%%%%%%%%%%%%%%%%% start of non-kml results %%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{EDA and pre-\texttt{kml} results}
+
+The total number of observations were \Sexpr{dim(df[])[1]} rabbits in the study population where each unique farm 11, 13 and 17 respectively contributed to evaluations of \Sexpr{dim(df[df$visit == "1",])[1]} does for visit 1 and \Sexpr{dim(df[df$visit == "2",])[1]} for each of visits 2 to 13 inclusively. There were \Sexpr{length(unique(df$EarTag))} does in the entire study population and they are not each evaluated at each time point, and they ``appear'' at different time points in the study.
+
+\begin{table}[h]
+\caption{Sample size in four distinct areas (barns) over thirteen visits totalling to \Sexpr{tab_area_visit$Total[5]}. Each row represents counts of rabbits evaluated per visit for a specific barn, totalling to \Sexpr{tab_area_visit$Total[1]} for barns 1 and 4 each. Barns 2 and 3 belong to the same farm (Farm 13).}\label{table0}.
+\centering
+\begin{tabular}{l|r|r|r|r|r|r|r|r|r|r|r|r|r|r}
+\hline
+Visit & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10 & 11 & 12 & 13 & Total\\
+\hline
+Barn 1 & 67 & 67 & 67 & 67 & 67 & 67 & 67 & 67 & 67 & 67 & 67 & 67 & 67 & 871\\
+\hline
+Barn 2 & 34 & 34 & 34 & 34 & 34 & 34 & 34 & 34 & 34 & 34 & 34 & 34 & 34 & 442\\
+\hline
+Barn 3 & 32 & 33 & 33 & 33 & 33 & 33 & 33 & 33 & 33 & 33 & 33 & 33 & 33 & 428\\
+\hline
+Barn 4 & 67 & 67 & 67 & 67 & 67 & 67 & 67 & 67 & 67 & 67 & 67 & 67 & 67 & 871\\
+\hline
+Total & 200 & 201 & 201 & 201 & 201 & 201 & 201 & 201 & 201 & 201 & 201 & 201 & 201 & 2612\\
+\hline
+\end{tabular}
+<<table0, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.height=3, fig.width=4, fig.align="centre">>=
+# knitr::kable(tab_area_visit, row.names = FALSE, booktabs = FALSE, format = "latex")
+@
+\end{table}
+
+\subsection{Scoring of Pododermatitis}
+
+The mean of the heel of left and right foot was used instead of median, and heel scores were preferred over mid foot scores due to higher counts of complete cases (\Sexpr{sum(complete.cases(df$meanPDheel))} and \Sexpr{sum(complete.cases(df$meanPDmid))}).
+% versus \Sexpr{sum(complete.cases(df$PDHRM))} and \Sexpr{sum(complete.cases(df$PDHLM))} for right and left appendage respectively). 
+Furthermore, the correlation is 0.14 via Kendall's rank correlation (see Appendix in Figure~\ref{trendpaw}) between heel and mid paw and trends show that as mean heel score increase, mean mid-paw score increases in general but not in a strictly linear manner as seen also in Figure~\ref{kentrend}. There is a significant evidence of association between mid-paw and mean heel scores, as seen in the linear model output Figure~\ref{trendpaw3}.
+
+\begin{figure}[h]
+\centering
+<<kentrend, result = "asis", include=TRUE, error=FALSE, message=FALSE, warning=FALSE, eval = TRUE, echo = FALSE, fig.align= "centre",  fig.width=6, fig.height=3>>=
+  ggplot(df) +
+	geom_smooth(aes(x = meanPDmid, y = meanPDheel), method = "loess", colour = "purple") +
+	labs(x = "Mean mid-paw score", y = "Mean heel score", title = "") +
+  	theme_gray() +
+		theme(
+				legend.title = element_text(size = 8),
+				legend.text = element_text(size = 8),
+				plot.title = element_text(size = 12),
+				axis.title = element_text(size = 8))
+#cor.test(df$meanPDheel, df$meanPDmid, method 
+# knitr::include_graphics("../Figures/corrplot.png")
+@
+\caption{Trend of mean mid-paw and heel score with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}. }\label{kentrend}
+\end{figure}
+
+% Individual trajectory of mean heel scores is reflected in Figure~\ref{dopepath} in the Appendix section. It can be observed that each individual rabbit has its own trajectory and are not necessarily present in all 13 visits by the evaluator. 
+% Area vs score
+
+\begin{figure}[h]
+\centering
+<<meanscore, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.align= "centre",  fig.width=6, fig.height=3>>=
+ # cluster
+ggplot(df, aes(x = visit, y = meanPDheel, 
+			 		colour = Area, group = Area)) +
+	geom_smooth(method = "loess") +
+  	theme_gray()+
+	labs(x = "Visit", y = "Score") +
+	geom_vline(xintercept = c(6, 9), 
+						 colour = "red", linetype = "dotted") +	expand_limits(y=c(3.8, 4.)) +
+		scale_colour_discrete(name = "Areas", labels = c("Barn 1"," Barn 2", "Barn 3", "Barn 4")) +
+  theme(legend.position = "bottom",
+				legend.title = element_text(size = 8),
+				legend.text = element_text(size = 8),
+				plot.title = element_text(size = 12),
+				axis.title = element_text(size = 8))
+  
+				# legend.title = element_text(size = 10),
+				# legend.text = element_text(size = 8),
+				# plot.title = element_text(size = 12),
+				# axis.title = element_text(size = 12),
+				# axis.x.bottom = element_text(size = 8))
+@
+\caption{Mean bilateral heel scores across 13 visits for all areas with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}. Indicated between vertical red lines are the northern hemisphere winter season.}\label{meanscore}
+\end{figure}
+
+Mean heel scores across 13 visits is \Sexpr{round(mean(df$meanPDheel, na.rm = TRUE), 2)} with standard deviation \Sexpr{round(sd(df$meanPDheel, na.rm = TRUE), 2)}. Mean scores stratified by area show that some mean heel scores improve over time and have overlap of the standard error, in Figure~\ref{meanscore}  These scores also show peaks within the winter months for barns 1, 3 and 4. When looking merely at the summer to autumn months, scores tend to decrease for all barns between visit 1 to 4, and for barns 1 and 3, scores increase from visit 4 reach a peak between visit 6 and 9 and the scores in these barns decrease during winter. When visit 1 is compared to the visit 13, there is an overall improvement of pododermatitis scores across most barns.
+% A full summary of the scores across trajectories is found in the Appendix in Tables ~\ref{}.
+\clearpage
+\subsection{Reproductive state, age and weight}
+\begin{figure}[h]
+\centering
+<<reprovisit, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, fig.align= "centre",  fig.width=6, fig.height=4>>=
+
+#devtools::install_github('haleyjeppson/ggmosaic', force = TRUE)
+# packageDescription("ggplot2")$Version #3.3.2
+# packageDescription("ggmosaic")$Version #0.3.0
+ggplot(df) +
+		geom_mosaic(aes(x = product(ReproductiveState, visit),
+										fill = ReproductiveState)) +
+  	theme_gray()+
+	theme(legend.position = "none",
+				axis.text.y = element_text(size = 8)) +
+	ggplot2::labs(x = "Visit", y = "Reproductive state")
+@
+\caption{Reproductive stats across all areas or barns. On the x-axis are each visit where visit 6 to 9 inclusive represents the winter months. The width of each rectangle represents the proportion within each barn. On the x-axis, the length of each rectangle represents the proportion in each reproductive state.}\label{reprovisit}
+\end{figure}
+\begin{figure}
+\centering
+<<rabbitrepro, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, fig.align= "centre",  fig.width=6, fig.height=5>>=
+ggplot(df) +
+		geom_mosaic(aes(x = product(ReproductiveState, visit),
+										fill = ReproductiveState, conds = product(Area))) +
+	theme_gray() +
+	labs(x = "Reproductive state:Partition", y = "Visit") +
+	theme(legend.position = "none",
+				axis.text.x.bottom = element_blank(),
+				axis.title = element_text(size = 8),
+				legend.title = element_text(size = 8),
+				legend.text = element_text(size = 8),
+				axis.ticks = element_blank()) 
+@
+\caption{Reproductive stats across visits on y-axis and area from barn 1 to 4 from left to right on the x-axis. On the x-axis, the length of each coloured rectangle represents the proportion within each respective barn. On the y-axis, the height of each rectangle represents the proportion in each visit. The categories for reproductive state and their colours in brackets are as follows : Late pregnancy (khaki green), middly pregnancy (aqua green), not pregnant (blue), early pregnancy (salmon), only lactating (fuschia), not pregnant (clear).}\label{rabbitrepro}
+\end{figure}
+I note that most rabbits are lactating or pregnant across visits in Figure~\ref{reprovisit} and across barns Figure~\ref{rabbitrepro}.
+% Age vs time
+Does were between three to \Sexpr{max(df$Age)} months of age, with a mean of \Sexpr{round(mean(df$Age),2)} months. The median age was \Sexpr{median(df$Age)} months. The does had a mean weight of \Sexpr{round(mean(df$Weight, na.rm = TRUE), 2)} kg, with minimum and maximum of 2.73 kg and 9.09 kg respectively. The median weight was \Sexpr{median(df$Weight, na.rm = TRUE)} kg. The parameters stratified by barns are seen in Table~\ref{awtab}.
+When age was compared across time, there is a non-linear trend with visits. This is likely due to new entries of does into the study, thus the age is not consistent across all time points. Barn 3's does seem to have a higher range of age in mean, followed by barn 1, barn 2 and barn 4, especially at the first six months of the study as seen in Figure~\ref{rabbitage}. \\ When weight is compared across visits, barn 2 seems to have the highest weight in mean across time. There is also a considerable peak reached during the winter months across all areas for weight. The standard error bounds approximately represent 100 g to 300 g across all areas, upon visual inspection of Figure~\ref{rabbitweight}.
+\vspace{0mm}
+\begin{table}[h]
+\caption{Stratified mean and standard deviation of age (in weeks) and weight (in kg) including population sample per barn area. The stratification with youngest mean age is barn 4. The stratification with the highest weight is barn 3.}\label{awtab}
+\centering
+\begin{tabular}{c|c|c|c}
+\hline
+  Area & $n$ &  Age: mean (SD) & Weight: mean (SD)\\
+\hline
+Barn 1 & 871 & 17.6 (8.2) & 5.15 (0.55)\\
+\hline
+Barn 2 & 442 & 16.6 (6.8) & 5.15 (0.54)\\
+\hline
+Barn 3 & 442 & 18.3 (8.1) & 5.29 (0.52)\\
+\hline
+Barn 4 & 871 & 14.6 (6.4) & 5.15 (0.53)\\
+\hline
+\end{tabular}
+<<awtab, results='asis', results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.align= "centre",  fig.width=5, fig.height=4>>=
+	# load("Data/tab_area.Rda")
+	# knitr::kable(tab_area, row.names = TRUE, booktabs = TRUE, format = "latex")
+
+	# mean and sd per area
+# a = sprintf("%.1f (%.1f)", mean(df$Age[df$Area == "Barn1"], na.rm = TRUE), sd(df$Age[df$Area == "Barn1"], na.rm = TRUE))
+# b = sprintf("%.1f (%.1f)", mean(df$Age[df$Area == "Barn2"], na.rm = TRUE), sd(df$Age[df$Area == "Barn2"], na.rm = TRUE))
+# c = sprintf("%.1f (%.1f)", mean(df$Age[df$Area == "Barn3"], na.rm = TRUE), sd(df$Age[df$Area == "Barn3"], na.rm = TRUE))
+# d = sprintf("%.1f (%.1f)", mean(df$Age[df$Area == "Barn4"], na.rm = TRUE), sd(df$Age[df$Area == "Barn4"], na.rm = TRUE))
+# 
+# e = sprintf("%.2f (%.2f)", round(mean(df$Weight[df$Area == "Barn1"], na.rm = TRUE), 3), round(sd(df$Weight[df$Area == "Barn1"], na.rm = TRUE), 3))
+# f = sprintf("%.2f (%.2f)", mean(df$Weight[df$Area == "Barn1"], na.rm = TRUE), round(sd(df$Weight[df$Area == "Barn2"], na.rm = TRUE), 3))
+# g = sprintf("%.2f (%.2f)", mean(df$Weight[df$Area == "Barn2"], na.rm = TRUE), round(sd(df$Weight[df$Area == "Barn3"], na.rm = TRUE), 3))
+# h = sprintf("%.2f (%.2f)", mean(df$Weight[df$Area == "Barn1"], na.rm = TRUE), round(sd(df$Weight[df$Area == "Barn4"], na.rm = TRUE), 3))
+# 
+# #idx = c(1, 3, 2, 4) # sorting as in publication
+# tab_area = array(NA, dim=c(4,4))
+# df$Area = factor(df$Area)
+# tab_area[,1] = levels(df$Area)
+# tab_area[,2] = c(dim(df[df$Area == "Barn1",])[1], dim(df[df$Area == "Barn2",])[1], dim(df[df$Area == "Barn2",])[1], dim(df[df$Area == "Barn1",])[1])
+# tab_area[,3] = c(a,b,c,d)
+# tab_area[,4] = c(e,f,g,h)
+# colnames(tab_area) = c("Area", "n", " Age: mean (SD)", "Weight: mean (SD)")
+# 	knitr::kable(tab_area, row.names = FALSE, booktabs = FALSE, format = "latex")
+@
+\end{table}
+
+\begin{figure}[h]
+\centering
+<<rabbitage, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.align= "centre", fig.width=6, fig.height=3>>=
+ # cluster
+ggplot(df, aes(x = visit, y = Age, colour = Area, group = Area)) +
+	geom_smooth(method = "loess") +
+  		theme_gray()+
+	labs(y = "Age (months)", x = "Visit") +
+	geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+			theme(legend.position = "bottom",
+						axis.title = element_text(size = 8)) +
+		expand_limits(y=c(10, 22.5)) +
+		scale_colour_discrete(name = "Areas", labels = c("Barn 1"," Barn 2", "Barn 3", "Barn 4"))
+@
+\caption{Age (in months) trends across visits stratified by area with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}. Indicated between vertical red lines are the northern hemisphere winter season.}\label{rabbitage}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+<<rabbitweight, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.align= "centre",  fig.width=6, fig.height=3>>=
+ # cluster
+ggplot(df, aes(x = visit, y = Weight, colour = Area, group = Area)) +
+	geom_smooth(method = "loess") +
+  		theme_gray()+
+	labs(y = "Weight (kg)", x = "Visit") +
+	geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+			theme(legend.position = "bottom",
+				legend.title = element_text(size = 8),
+				legend.text = element_text(size = 8),
+				plot.title = element_text(size = 12),
+				axis.title = element_text(size = 8),
+				axis.text.x.bottom = element_text(size = 8)) +
+		expand_limits( y=c(4.6, 5.6)) +
+		scale_colour_discrete(name = "Areas", labels = c("Barn 1"," Barn 2", "Barn 3", "Barn 4"))
+@
+\caption{Weight (kg) trends across visits stratified by areas with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}. Indicated between vertical red lines are the northern hemisphere winter season.}\label{rabbitweight}
+\end{figure}
+
+% temperature and rh
+\subsection{Temperature and relative humidity}
+The temperature and relative humidity stratified across areas is visualised in Figure~\ref{rabbittemp} and Figure~\ref{rabbitrh}. The relative humidity of barn 4 has an inverse trends to all other barns and this area was reported to have the highest altitude \citet{Ruchti_2019}. The peaks of the lowest and highest peak of relative humidity during the winter months has an approximate difference of 20\%. All other temperature and relative humidity follow similar trends amongst other areas.
+
+\begin{figure}
+\centering
+<<rabbittemp, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.align= "centre",  fig.width=6, fig.height=3>>=
+ggplot(df, aes(x = visit, y = Temperature, colour = Area, group = Area)) +
+	geom_smooth(method = "loess", se = TRUE) +
+  	theme_gray()+
+	labs(y = "Temperature (celcius)", x = "Visit") +
+	geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+			theme(legend.position = "bottom",
+				legend.title = element_text(size = 8),
+				legend.text = element_text(size = 8),
+				axis.title = element_text(size = 8),
+				axis.text.x.bottom = element_text(size = 8)) +
+		expand_limits(y=c(5, 30)) 
+@
+\caption{Temperature trends across visits stratified by areas with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}. Indicated between vertical red lines are the northern hemisphere winter season.}\label{rabbittemp}
+\end{figure}
+
+\begin{figure}
+\centering
+<<rabbitrh, results='asis', results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.align= "centre",   fig.width=6, fig.height=3>>=
+ # cluster
+ggplot(df, aes(x = visit, y = RelativeHumidity, colour = Area, group = Area)) +
+	geom_smooth(method = "loess", se = TRUE) +
+  		theme_gray()+
+	labs(y = "Relative humidity (%)", colour = "Areas", x = "Visit") +
+	geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+  theme(legend.position = "bottom",
+				legend.title = element_text(size = 8),
+				legend.text = element_text(size = 8),
+				plot.title = element_text(size = 8),
+				axis.title = element_text(size = 8),
+				axis.text.x.bottom = element_text(size = 8, angle = 90)) +
+		expand_limits(y=c(55, 70))
+@
+\caption{Relative humidity trends across visits stratified by areas with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}. Indicated between vertical red lines are the northern hemisphere winter season.}\label{rabbitrh}
+\end{figure}
+\clearpage
+
+\subsection{Cleanliness and moisture of paws}
+% cleanliness and moisture
+
+\begin{figure}[H]
+\centering
+<<cleanFRvisit, results='asis', results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.align= "centre",  fig.width=5, fig.height=4>>=
+#concordance with WAPP and cleanliness
+ggplot(df) +
+  geom_mosaic(aes(x = product(CleanFR, visit), fill = CleanFR)) +
+  labs(x = "Visit", y = "Cleanliness") +
+  	theme_gray() +
+	theme(legend.position = "bottom",
+				legend.title = element_text(size = 8),
+				legend.text = element_text(size = 8),
+				axis.title = element_text(size = 8)) +
+theme(
+  axis.text.x = element_text(),
+  axis.text.y = element_blank(),
+  axis.ticks = element_blank())
+@
+\caption{Cleanliness of rabbit front paws (FR = Front Paw) across visits. The x-axis represents visits from 1 to 13. On the x-axis, each width is the proportion of observations. On the y-axis are the categories of cleanlinessindicated by the legend. On the y-axis, each of its height represents the proportion of that category of each visit.}\label{cleanFRvisit}
+\end{figure}
+
+Most paws when assessed were clean in the right front paws as seen in Figure~\ref{cleanFRvisit}. Most rabbits across visits had dry paws as well, and for hind left paws, there is a winter trend in barn 1 where paws are mostly moist in visit 7 and 8. Specific winter trend on other areas on the moisture of the paws are not apparent. Some hind right paws were wet throughout the year but in small proportions per barn and visit as seen in Figure~\ref{MoistHR}.
+
+% % Moist HR
+\begin{figure}
+\centering
+<<MoistHR, results='asis', results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.align= "centre",  fig.width=5, fig.height=4>>=
+	ggplot(df) + # show case
+  geom_mosaic(aes(x = product(visit),
+  								fill = MoistHR, conds = product(Area))) +
+  	theme_gray() +
+  scale_fill_brewer(palette = "Set1") +
+ labs(x = "Category:Area", y = "Visit") + 
+		theme(legend.position = "bottom",
+  axis.text.x.bottom = element_text(size = 6, angle = 90),
+  axis.ticks = element_blank(),
+  axis.title = element_text(size = 8),
+  legend.text = element_text(size = 8),
+  legend.title = element_text(size = 8))
+@
+\caption{MoistHR represents the ordinal variable of moisture of hind right paw of the doe. The y-axis represents each visit in descending order from top to bottom. On the y-axis, the height of each rectangle represents the proportion of does in that specific visit or time point. On the x-axis from left to right, represents barns 1 to 4. The width of the x-axis represent the proportion of a particular ordinal category. }\label{MoistHR}
+\end{figure}
+
+\subsection{Claw length}
+% claw length
+With respect of claw length, there is a higher proportion of normal length of nails than ``too long'' across all areas and within stratified areas, especially during the winter months.
+
+\begin{figure}
+\centering
+<<claw, results='asis', results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE,fig.align= "centre",  fig.width=5, fig.height=4>>=
+ # cluster
+ggplot(df) +
+  geom_mosaic(aes(x = product(Claws, visit), fill = Claws , conds = product(Area))) +
+  labs(x = "Area", y = "Visit") +
+  	theme_gray()+
+	scale_fill_brewer(palette = "Set2") +
+  theme(
+    legend.position = "bottom",
+				legend.title = element_text(size = 8),
+				legend.text = element_text(size = 8),
+				axis.title = element_text(size = 8),
+    axis.text.x.bottom = element_text(angle = 90, size = 6))
+@
+\caption{Claw length categories across four areas for each visit from barn 1 to 4 from left to right. The y-axis represents each visit in descending order from top to bottom. On the y-axis, the height of each rectangle represent the proportion of does in that specific visit or time point. On the x-axis, each length represents the proportion of a particular category of each respective barn. }\label{claw}
+\end{figure}
+
+% %%%%%%%%%%%%%%%%%%%%%% end of non-kml results %%%%%%%%%%%%%%%%%%%%%%%%
+%
+% %%%%%%%%%%%%%%%%%%%%%% start of kml results %%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{table}[h]
+\caption{Mean and standard deviation score for two and four partitions including sample sizes. Since \texttt{kml} partitioning required full trajectories, each implementation required thirteen time points per individual (unique) doe or ear tag. The number of observations thus increased from 2612 of the original dataset. }\label{kml24}
+\centering
+\begin{tabular}{c|c|c}
+\hline
+  Partitions &   $n$ &  Mean (SD)\\
+\hline
+A of 4 partitions & 2951 & 4.0 (0.2)\\
+\hline
+B of 4 partitions & 1183 & 3.7 (0.4)\\
+\hline
+C of 4 partitions & 312 & 4.0 (0.2)\\
+\hline
+D of 4 partitions & 26 & 3.8 (0.3)\\
+\hline
+A of 2 partitions & 3341 & 3.5 (0.4)\\
+\hline
+B of 2 partitions & 1131 & 5.0 (0.0)\\
+\hline
+\end{tabular}
+<<kml24, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.height=3, fig.align= "centre",  fig.width=5, fig.height=4>>=
+# knitr::kable(kml24, row.names = FALSE, booktabs = FALSE, format = "latex", align = "c")
+@
+\end{table}
+
+\begin{figure}[h]
+\centering
+<<graphics, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, fig.align= "centre",  fig.width=6, fig.height=3>>=
+knitr::include_graphics("../Figures/2kmlscenario.png")
+@
+\caption{Graphical display of the four partioning process with quality criterion on the left, distribution of trajectories on top and trajectories in process of partitioning on the bottom right. The left side of the figure is the score of quality criterion. Where the dot is placed indicates the number of clusters (seen here ``2'') that is shown on the right side of this figure. The lower curve in read indicates the four parition scenario where seen closely is reresented by the character ``4'' on the curve. }\label{2kmlgraphics}.
+\end{figure}
+\vspace{0mm}
+\begin{table}\caption{Concordance of two and four partition scenarios}\label{conkml}
+\centering
+\begin{longtable}{c|c|c|c|c}
+\hline
+  & A & B & C & D\\
+\hline
+A & 0.88 & 0.11 & 0.00 & 0.01\\
+\hline
+B & 0.00 & 0.72 & 0.28 & 0.00\\
+\hline
+\end{longtable}
+<<conkml0, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.align= "centre",  fig.width=5, fig.height=4>>=
+# knitr::kable(conkml, row.names =FALSE, booktabs = FALSE, format = "latex", align = "c", longtable = TRUE)
+@
+\end{table}
+
+\vspace{0mm}
+\section{Initialisation and implementation of \texttt{kml}}
+% sample size
+During the initialisation process, the long form data frame where each row was a single observation, was converted to a 343 by 13 wide-form data frame as there were 343 individual does across 13 visits. The wide form data frame now had each row represent the trajectory of each individual doe. As not all individual does are present at each of the time points, 1872 values were missing and imputated prior to \texttt{kml} implementation. Sample sizes per partition decreases from A to D for the \texttt{kml} implementation for four partitions, whilst sample sizes are similar for both groups A and B in the \texttt{kml} implementation for two partitions as seen in Table~\ref{kml24}. Sample sizes decreases progressively with increase in partitions.
+The graphical illustration of the two partition process is seen in Figure~\ref{2kmlgraphics}, provided by the slow \texttt{kml} command. The left side of this illustration is the quality criterion indicating the best number of partitions according to the algorithm. Among all the partitions, the one indicated with a black dot is displayed on the right with ``2'' indicated above and ``4'' as a curve inferior to it. 
+% concordance
+The partitioned data after \texttt{kml} implemention in two and four partitions were compared in Table~\ref{conkml}. The paritions A and B proposed by two partition is most similar to partition A and B of four partitions. 
+
+\subsection{Generalized linear models}
+Generalized linear models of binomial distribution assumption was used and showed that there is evidence of significant difference between the partitions within each \texttt{kml} implementation. For more detailed output and for the four \texttt{kml} partition summary output, refer to Appendix section on Figure~\ref{kml2glm} and Figure~\ref{kml4glm}.  
+
+\newpage
+\section{EDA of \texttt{kml} partitions}
+
+\subsection{Temperature and relative humidity}
+% temperature rh wet
+The trajectories of temperature and relative humidity follow a similar trend in the two and four partitions. The effect of barn 4's relative humidity is not apparent after partitioning as observed in Figure~\ref{kmlrh}.
+
+\begin{figure}
+\centering
+<<kml2temp, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.align= "centre",  fig.width=6, fig.height=3>>=
+ 
+ggplot(na.omit(df_longdf),
+			 aes(x = visit, y = Temperature, colour = kmlclusters4, group = kmlclusters4)) +
+	geom_smooth(method = "loess") +
+  	theme_gray() +
+	labs(x = "Visit", y = "Temperature (celcius)") +
+	geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+	geom_text(aes(x = 7.5, y=18, label = "")) + 
+  	theme(legend.position = "bottom",
+  				axis.title = element_text(size = 8),
+  				legend.text = element_text(size = 8)) +
+  		expand_limits(y=c(5, 30)) +
+	scale_colour_discrete(name = "Four partitions")  -> tempkmlclusters4
+  
+ggplot(na.omit(df_longdf), aes(x = visit, y = Temperature, colour = kmlclusters2, group = kmlclusters2)) +
+	geom_smooth(method = "loess") +
+	theme_gray() +
+	labs(x = "Visit", y = "Temperature (celcius)") +
+	geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+	theme(legend.position = "bottom",
+  				axis.title = element_text(size = 8),
+  				legend.text = element_text(size = 8)) +
+  	labs(colour = "Two partitions") +
+	expand_limits(x=c(1,13), y=c(5, 30))+
+	geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted")   -> tempkmlclusters2
+  
+   plot_grid(tempkmlclusters2, tempkmlclusters4,
+  align="h")
+  				# legend.title = element_text(size = 8),
+  				# legend.text = element_text(size = 8),
+  				# axis.title = element_text(size = 8),
+  				# axis.text.x.bottom = element_text(size = 8))
+@
+\caption{Temperature across visit for two partitions in a with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}. Indicated between vertical red lines are the northern hemisphere winter season.}\label{kml2temp}
+\end{figure}
+
+% \begin{figure}
+% <<kml4temp, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.align= "centre",  fig.width=5, fig.height=4>>=
+%  # cluster
+% ggplot(na.omit(df_longdf),
+% 			 aes(x = visit, y = Temperature, colour = kmlclusters4, group = kmlclusters4)) +
+% 	geom_smooth(method = "loess") +
+% 	labs(x = "Visit", y = "Temperature (celcius)") +
+% 	geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+% 	geom_text(aes(x = 7.5, y=18, label = "")) + 
+%   	theme(legend.position = "bottom") +
+%   		expand_limits(y=c(10, 27)) +
+% 	scale_colour_discrete(name = "Four partitions")-> tempkmlclusters4
+%   
+%   				# legend.title = element_text(size = 8),
+%   				# legend.text = element_text(size = 8),
+%   				# axis.title = element_text(size = 8),
+%   				# axis.text.x.bottom = element_text(size = 8)) +
+% 
+% @
+% \caption{Temperature of four partitions across visit in a linear model line of best fit with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}. Indicated between vertical red lines are the northern hemisphere winter season.}\label{kml4temp}
+% \end{figure}
+
+\begin{figure}
+\centering
+<<kml2rh, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.align= "centre",  fig.width=6, fig.height=3>>=
+ # cluster
+ggplot(na.omit(df_longdf),
+			 aes(x = visit, y = RelativeHumidity, colour = kmlclusters2, group = kmlclusters2)) +
+	geom_smooth(method = "loess") +
+	theme_gray() +
+	labs(x = "Visit", y = "Relative humidity (%)") +
+	geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+	theme(legend.position = "bottom",
+  			axis.title = element_text(size = 8),
+  				legend.text = element_text(size = 8))  +
+		expand_limits(y=c(55, 70)) +
+	scale_color_discrete(name = "Two partitions") -> rhkmlclusters2
+  
+  ggplot(na.omit(df_longdf),
+			 aes(x = visit, y = RelativeHumidity, colour = kmlclusters4, group = kmlclusters4)) +
+	geom_smooth(method = "loess") +
+  	theme_gray() +
+	labs(x = "Visit", y = "Relative humidity (%)") +
+	geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+  theme(legend.position = "bottom",
+  			axis.title = element_text(size = 8),
+  				legend.text = element_text(size = 8)) +
+  		expand_limits(x=c(1,13), y=c(55, 70))  +
+	labs(colour = "Four partitions") -> rhkmlclusters4
+   
+  plot_grid(rhkmlclusters2, rhkmlclusters4,
+  align="h")
+  				# legend.title = element_text(size = 8),
+  				# legend.text = element_text(size = 8),
+  				# axis.title = element_text(size = 8),
+  				# axis.text.x.bottom = element_text(size = 8)) +
+@
+\caption{Relative humidity of two partitions across visits with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximatio \citep{pkg:ggplot2}. Indicated between vertical red lines are the northern hemisphere winter season.}\label{kmlrh}
+\end{figure}
+
+% \begin{figure}
+% <<kml4rh, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.align= "centre",  fig.width=5, fig.height=4>>=
+% ggplot(na.omit(df_longdf),
+% 			 aes(x = visit, y = RelativeHumidity, colour = kmlclusters4, group = kmlclusters4)) +
+% 	geom_smooth(method = "loess") +
+% 	labs(x = "Visit", y = "Relative humidity (%)") +
+% 	geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+%   theme(legend.position = "bottom") +
+%   		expand_limits(x=c(1,13), y=c(55, 70))  +
+% 	labs(colour = "Four partitions") 
+%   
+%   			# axis.text.x.bottom = element_text(size = 8),
+%   			# 	legend.title = element_text(size = 8),
+%   			# 	legend.text = element_text(size = 8),
+%   			# 	axis.title = element_text(size = 8)) +
+% 
+%  
+% @
+% \caption{Relative humidity of four partitions across visits with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}. Indicated between vertical red lines are the northern hemisphere winter season.}\label{kml4rh}
+% \end{figure}
+\clearpage
+\subsection{Scores of Pododermatitis}
+% scores
+% The score trajectories between two partition in Figure~\ref{kml2score} and four partition in Figure~\ref{kml2score} scenarios are interesting. 
+For the two partition implementation, the mean heel scores across all visits had a mean of \Sexpr{round(mean(df_longdf$meanPDheel.x[df_longdf$kmlclusters2 == c("A", "B")], na.rm = TRUE), 2)} and a standard deviation of \Sexpr{round(sd(df_longdf$meanPDheel.x[df_longdf$kmlclusters2 == c("A", "B")], na.rm = TRUE), 2)}. For the four partition implementation, the mean heel scores overall had a mean of \Sexpr{round(mean(df_longdf$meanPDheel.x[df_longdf$kmlclusters4 == c("A", "B", "C", "D")], na.rm = TRUE), 2)} and a standard deviation of \Sexpr{round(sd(df_longdf$meanPDheel.x[df_longdf$kmlclusters2 ==  c("A", "B", "C", "D")], na.rm = TRUE), 2)}. There is a clear separation between the two partitions in Figure~\ref{kml2score}, below and above score four. For the four partitions, there is mostly a clear separation between trajectories of A to C as seen in the Figure~\ref{kml4score}. There is mostly no peak during the winters for the two and four partition case, except for partition C in the latter case. Scores in all partitions tend to be higher in the winter months.
+
+\begin{figure}[h]
+\centering
+<<kml2score, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.align= "centre",   fig.width=6, fig.height=3>>=
+ # cluster
+a = paste( "A", " (", twokmlcounts$n[1], ")", sep = "")
+b = paste( "B", " (", twokmlcounts$n[2], ")", sep = "")
+ggplot(na.omit(df_longdf),
+			 aes(x = visit, y = meanPDheel.y, colour = kmlclusters2, group = kmlclusters2)) +
+	geom_smooth(method = "loess") +
+	theme_gray() +
+	labs(x = "Visit", y = "Score") +
+	geom_vline(xintercept = c(6, 9), colour = "red", 
+						 linetype = "dotted") +
+	theme(legend.position = "bottom") + 
+	expand_limits(x=c(1,13), y=c(3.5, 5.5)) +
+	scale_colour_discrete(name = "Two kml\npartitions (n)", labels=c(a, b)) +
+	scale_x_discrete(name = "Visit", limits = factor(c(1,2,3,4,5,6,7,8,9,10,11,12,13))) 
+@
+\caption{Mean bilateral heel scores across 13 visits for two partitions with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}. Indicated between vertical red lines are the northern hemisphere winter season.}\label{kml2score}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+<<kml4score, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.align= "centre",   fig.width=6, fig.height=3>>=
+a = paste( "A", " (", fourkmlcounts$n[1], ")", sep = "")
+b = paste( "B", " (", fourkmlcounts$n[2], ")", sep = "")
+c = paste( "C", " (", fourkmlcounts$n[3], ")", sep = "")
+d = paste( "D", " (", fourkmlcounts$n[4], ")", sep = "")
+ggplot(df_longdf,
+			 aes(x = visit, y = df_longdf$meanPDheel.y, colour = df_longdf$kmlclusters4, group = df_longdf$kmlclusters4)) +
+	theme_gray() +
+	geom_smooth(method = "loess") +
+	scale_colour_discrete(name = "Four kml\npartitions (n)",
+                    labels=c(a, b, c, d)) +
+	labs(x = "Visit", y = "Score") +
+	geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+	theme(legend.position = "bottom") +
+	expand_limits(x=c(1,13), y=c(3.5, 5.5)) + scale_x_discrete(name = "Visit", limits = factor(c(1,2,3,4,5,6,7,8,9,10,11,12,13)))
+@
+\caption{Mean bilateral heel scores across 13 visits for four partitions with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation a \citep{pkg:ggplot2}. Indicated between vertical red lines are the northern hemisphere winter season. Partition D has a small sample count and thus is not represented here. }\label{kml4score}
+\end{figure}
+
+\clearpage
+
+\subsection{Reproductive state, age and weight}
+
+I note that most rabbits are lactating or pregnant in any given time and farm areas in the partitions, seen in Figure~\ref{kmlrepro}. This is consistent with results prior to \texttt{kml} implementation, for example in Figure~\ref{rabbitrepro} in the Appendix section.
+
+\begin{figure}
+\centering
+<<kml2repro, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, fig.align= "centre",  fig.width=6, fig.height=3>>=
+ggplot(na.omit(df_longdf)) +
+		geom_mosaic(aes(x = product(ReproductiveState, visit),
+										fill = ReproductiveState, conds = product(kmlclusters2))) +
+	theme_gray() +
+	labs(x = "Reproductive state:Partition", y = "Visit") +
+	theme(legend.position = "none",
+				axis.text.x.bottom = element_blank(),
+				axis.title = element_text(size = 8),
+				legend.title = element_text(size = 6),
+				axis.ticks = element_blank()) -> reprokmlclusters2
+ggplot(na.omit(df_longdf)) +
+		geom_mosaic(aes(x = product(ReproductiveState, visit),
+										fill = ReproductiveState, conds = product(kmlclusters4))) +
+		theme_gray() +
+	labs(x = "Reproductive state:Partition", y = "Visit") +
+	theme(legend.position = "none",
+				axis.text.x.bottom = element_blank(),
+				axis.title = element_text(size = 8),
+				legend.title = element_text(size = 6),
+				legend.text = element_text(size = 6),
+					axis.ticks = element_blank()) -> reprokmlclusters4
+
+plot_grid( reprokmlclusters2, reprokmlclusters4,
+  align="v")
+
+# 				legend.title = element_text(size = 8),
+# 				legend.text = element_text(size = 8),
+# 				plot.title = element_text(size = 12),
+# 				axis.title = element_text(size = 10)) +
+# 	theme(
+#   axis.text.x = element_blank(),
+#   axis.text.y = element_text(size = 6),
+#   axis.ticks = element_blank())
+
+# labs(x = c("Barn 1", "Barn 2", "Barn 3", "Barn 4")) +
+
+
+#scale_x_continuous(breaks=c("Barn1", "Barn2", "Barn3", "Barn4"))
+@
+\caption{Reproductive states across two partitions and four partitions from A on the origin axis. On the x-axis are respectively partition A and B (from left to right) for the two partition case on the left mosaic plot, and partitions A to C (from left to right) on the right mosaic plot. On the y-axis of each mosaic plot, the height of each rectangle represents the proportion in each reproductive state. On the x-axis on each mosaic plot, each length represents the proportion per category. The categories for reproductive state and their colours in brackets are as follows : Late pregnancy (khaki green), middly pregnancy (aqua blue), early pregnancy (salmon), only lactating (fuschia). In the four parition data set, partition D has a small sample count and thus is not represented here.}\label{kmlrepro}
+\end{figure}
+
+% \begin{figure}
+% <<kml4repro, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, fig.align= "centre",  fig.width=5, fig.height=4>>=
+% ggplot(na.omit(df_longdf)) +
+% 		geom_mosaic(aes(x = product(ReproductiveState, visit),
+% 										fill = ReproductiveState, conds = product(kmlclusters4))) +
+% 	labs(x = "Reproductive state:Partition", y = "Visit") +
+% 	theme(legend.position = "bottom")
+% 
+% 				# legend.title = element_text(size = 8),
+% 				# legend.text = element_text(size = 8),
+% 				# plot.title = element_text(size = 12),
+% 				# axis.title = element_text(size = 10),
+% 				# axis.text.x = element_blank(),
+% 				# axis.text.y = element_text(),
+% 				# axis.ticks = element_blank())
+% @
+% \caption{Reproductive stats across four partitions. On the x axis are respectively partition A and B, where the width of each rectangle represents the proportion within each barn. On the Y axis, the height of each rectangle represents the proportion in each reproductive state indicated in the legend. Partition D has a small sample count and thus is not represented here. }\label{kml4repro}
+% \end{figure}
+
+% age and weight
+\begin{figure}
+\centering
+<<kml2age, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.align= "centre",  fig.width=6, fig.height=3>>=
+ggplot(na.omit(df_longdf), aes(x = visit, y = Age, colour = kmlclusters2, group = kmlclusters2)) +
+	geom_smooth(method = "loess") +
+	theme_gray() +
+	theme(legend.position = "bottom",
+				legend.title = element_text(size = 8),
+				legend.text = element_text(size = 8),
+				axis.title = element_text(size = 8)) +
+	labs(colour = "Two partitions", y = "Age (months)", x = "Visit") +
+	expand_limits(x=c(1,13), y=c(10, 22.5)) +
+	geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") -> agekmlclusters2
+
+ggplot(na.omit(df_longdf),
+			 aes(x = visit, y = Age, colour = kmlclusters4, group = kmlclusters4)) +
+	geom_smooth(method = "loess") +
+	theme_gray()+
+	labs(colour = "Four partitions", y = "Age (months)", x = "Visit") +
+	geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+  theme(legend.position = "bottom",
+				legend.title = element_text(size = 8),
+				legend.text = element_text(size = 8),
+				axis.title = element_text(size = 8))  +
+	expand_limits(x=c(1,13), y=c(10, 22.5))-> agekmlclusters4
+
+plot_grid( agekmlclusters2, agekmlclusters4,
+  align="h")
+@
+\caption{Mean age of two and four partitians across visits with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}. Indicated between vertical red lines are the northern hemisphere winter season.}\label{kml2age}
+\end{figure}
+
+In both the two and four partitions, age does not increase in a strict linear manner with time. The trends are similar to the area by stratification analysis. The standard errors increase for partition C in the four partition case. 
+
+% \begin{figure}
+% <<kml4age, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.align= "centre",  fig.width=5, fig.height=4>>=
+% ggplot(na.omit(df_longdf),
+% 			 aes(x = visit, y = Age, colour = kmlclusters4, group = kmlclusters4)) +
+% 	geom_smooth(method = "loess") +
+% 	labs(colour = "Four partitions", y = "Age (months)", x = "Visit") +
+% 	expand_limits(x=c(1,13), y=c(4.6, 5.6)) +
+% 	geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+%   theme(legend.position = "bottom",
+%   			axis.text.x = element_text(size = 8)) 
+% @
+% \caption{Mean age of four partitions with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}. Indicated between vertical red lines are the northern hemisphere winter season. Partition D has a small sample count and thus is not represented here. }\label{kml4age}
+% \end{figure}
+
+
+\begin{figure}
+\centering
+<<kml2weight, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE,fig.align= "centre",  fig.width=6, fig.height=3>>=
+ggplot(na.omit(df_longdf),
+			 aes(x = visit, y = Weight, colour = kmlclusters2, 
+			 		group = kmlclusters2)) +
+	geom_smooth(method = "loess") +
+	theme_gray() +
+	labs(x = "Visit", y = "Weight (kg)", colour = "Two partitions") +
+	geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+	  theme(legend.position = "bottom",
+				legend.title = element_text(size = 8),
+				legend.text = element_text(size = 8),
+				axis.title = element_text(size = 8)) +
+	expand_limits(x=c(1,13), y=c(4, 5.5))-> weightkmlclusters2
+
+ggplot(na.omit(df_longdf), aes(x = visit, y = Weight, colour = kmlclusters4, group = kmlclusters4)) +
+	geom_smooth(method = "loess") +
+	theme_gray() +
+	labs(x = "Visit", y = "Weight (kg)", colour = "Four partitions") + expand_limits(x=c(1,13), y=c(4, 5.5)) + 
+	geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+theme(legend.position = "bottom",
+				legend.title = element_text(size = 8),
+				legend.text = element_text(size = 8),
+				axis.title = element_text(size = 8)) -> weightkmlclusters4
+
+plot_grid( weightkmlclusters2, weightkmlclusters4,
+  align="h")
+	
+@
+\caption{Mean weight of two and four partitions with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}. Indicated between vertical red lines are the northern hemisphere winter season. In the four partition case, partition D has small sample counts and thus is not shown here. }\label{kml2weight}
+\end{figure}
+
+
+% \begin{figure}
+% <<kml4weight, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.align= "centre",  fig.width=5, fig.height=4>>=
+% ggplot(na.omit(df_longdf), aes(x = visit, y = Weight, colour = kmlclusters4, group = kmlclusters4)) +
+% 	geom_smooth(method = "loess") +
+% 	labs(x = "Visit", y = "Weight", colour = "Four partitions") + expand_limits(x=c(1,13), y=c(4.6, 5.6)) + 
+% 	geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+% 	theme(legend.position = "bottom",
+% 				axis.text.x.bottom = element_text(size = 8))
+% @
+% \caption{Mean weight for two partitions with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}. Indicated between vertical red lines are the northern hemisphere winter season. Partition D has a small sample count and thus is not represented here. }\label{kml4weight}
+% \end{figure}
+
+Weight increases for the two and four partitions with time. There is a visible peak on visual inspection during the winter months. For two partitions, partitian B is superior in weight than A however given the standard error shaded, there is an overlap. The standard error across time is relatively stable in across all visits as observed in Figure~\ref{kml2age}. For the four parition case, weights increase with time. The standard error for C is larger and overlaps the other trajectories for most of the time points. 
+
+
+
+\subsection{Cleanliness of paws}
+
+Most claws at all time points are categorised as clean as seen in Figure~\ref{kmlclean} for both two and four partitions. The other appendages are recorded in the Appendix in Figure~\ref{kmlclean2} and Figure~\ref{kmlclean3}.
+
+\begin{figure}
+\centering
+<<kmlclean, results='asis', results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.align= "centre",  fig.width=6, fig.height=3>>=
+ # cluster
+ggplot(na.omit(df_longdf)) + # show case
+  geom_mosaic(aes(x = product(visit),
+  								fill = CleanFR, conds = product(kmlclusters2))) +
+		theme_gray() +
+	scale_fill_brewer(palette = "Set1") +
+	labs(x = "Clean:Partitions", y = "Visit") +
+	theme(legend.position = "bottom", 
+				axis.text.x = element_blank(),
+				legend.title = element_text(size = 8)) -> cleankmlclusters2
+
+ggplot(na.omit(df_longdf)) + # show case
+  geom_mosaic(aes(x = product(visit),
+  								fill = CleanFR, conds = product(kmlclusters4))) +
+	theme_gray() +
+	scale_fill_brewer(palette = "Set1") +
+	labs(x = "Clean:Partitions", y = "Visit") +
+	theme(legend.position = "bottom", 
+				axis.text.x = element_blank(),
+				legend.title = element_text(size = 8)) -> cleankmlclusters4
+
+plot_grid( cleankmlclusters2, cleankmlclusters4,
+  align="h")
+				# legend.title = element_text(size = 8),
+				# legend.text = element_text(size = 8),
+				# plot.title = element_text(size = 12),
+				# axis.title = element_text(size = 10),
+				# axis.text.x = element_blank(),
+				# axis.text.y = element_text(size = 8))
+@
+\caption{CleanFR represents the ordinal variable of cleanliness of front right paw of the doe. On the x-axis are respectively partition A and B (from left to right) for the two partition case on the left mosaic plot, and partitions A to C (from left to right) on the right mosaic plot, where the width of each rectangle represents the proportion within each barn. On the y-axis, the height of each rectangle represents the proportion in each cleanliness state. In the four parition data set, partition D has a small sample count and thus is not represented here.}\label{kmlclean}
+\end{figure}
+
+% \begin{figure}
+% <<kml4clean, results='asis', results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.align= "centre",  fig.width=5, fig.height=4>>=
+% # df_longdf[df_longdf$kmlclusters4 %in% c("A", "B", "C"),]
+% ggplot(na.omit(df_longdf)) + # show case
+%   geom_mosaic(aes(x = product(visit),
+%   								fill = CleanFR, conds = product(kmlclusters4))) +
+%   scale_fill_brewer(palette = "Set1") +
+%  labs(x = "Clean: Partitions", y = "Visit") +
+% theme(legend.position = "bottom",
+% 			axis.ticks = element_blank(),
+% 				axis.text.x.bottom = element_text(size = 8, angle = 90),
+% 			
+%     panel.grid.major = element_blank(),
+%     panel.grid.minor = element_blank())
+% 				# legend.title = element_text(size = 8),
+% 				# legend.text = element_text(size = 8),
+% 				# plot.title = element_text(size = 12),
+% 				# axis.title = element_text(size = 10),
+% 				# axis.text.y = element_text(size = 8),
+% # 			panel.grid.major = element_blank(),
+% #     panel.grid.minor = element_blank())
+% @
+% \caption{CleanFR represents the ordinal variable of clenliness of front right paw of the doe. The y-axis represents each visit in descending order from top to bottom. On the x-axis from left to right, represents each of four partitions of the \texttt{kml} implementation. The height of each rectangle and y-axes represent the proportion of does in that specific visit or time point. The width of the x-axis represent the proportion of a particular ordinal category it represents. Barn 1 to 4 is from left to right. Partition D has a small sample count and thus is not represented here. }\label{kml4clean}
+% \end{figure}
+
+\subsection{Claw length}
+%claw length
+When comparing the effect of claw length across optimal partitions in the four partitions, frequency of normal length claws increase over time whilst ``too long'' claws decreased at the end of the study as seen in (Figure~\ref{kml2claw}).
+
+\begin{figure}
+\centering
+<<claw2kml, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.align= "centre",  fig.width=6, fig.height=3>>=
+ # cluster
+ggplot(na.omit(df_longdf)) +
+  geom_mosaic(aes(x = product(Claws, visit), fill = Claws , conds = product(kmlclusters2))) +
+  theme_gray() +
+  labs(x = "Claws:Partition", y = "Visit") +
+	scale_fill_brewer(palette = "Set1") +
+  theme(legend.position = "bottom",
+				legend.title = element_text(size = 8),
+				legend.text = element_text(size = 8),
+				plot.title = element_text(size = 12),
+				axis.title = element_text(size = 10),
+				axis.text.x = element_blank(),
+				axis.text.y = element_text(size = 8),
+				axis.ticks = element_blank()) -> clawskmlclusters2
+
+ggplot(na.omit(df_longdf)) +
+  geom_mosaic(aes(x = product(Claws, visit), fill = Claws , conds = product(kmlclusters4))) +
+	  theme_gray() +
+  labs(x = "Claws:Partition", y = "Visit") +
+	scale_fill_brewer(palette = "Set1") +
+    theme(legend.position = "bottom",
+				legend.title = element_text(size = 8),
+				legend.text = element_text(size = 8),
+				plot.title = element_text(size = 12),
+				axis.title = element_text(size = 10),
+				axis.text.x = element_blank(),
+				axis.text.y = element_text(size = 8),
+				axis.ticks = element_blank())  -> clawskmlclusters4
+
+plot_grid( clawskmlclusters2, clawskmlclusters4,
+  align="h")
+@
+\caption{Claw length across two partitions and four partitions from A on the origin axis. On the x-axis are respectively partition A and B (from left to right) for the two partition case on the left mosaic plot, and partitions A to C (from left to right) on the right mosaic plot, where the width of each rectangle represents the proportion within each barn. On the y-axis, the height of each rectangle represents the proportion in each category. In the four parition data set, partition D has a small sample count and thus is not represented here.}\label{kml2claw}
+\end{figure}
+
+% \begin{figure}
+% <<claw4kml, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.align= "centre",  fig.width=5, fig.height=4>>=
+%  # cluster
+% ggplot(na.omit(df_longdf)) +
+%   geom_mosaic(aes(x = product(Claws, visit), fill = Claws , conds = product(kmlclusters4))) +
+%   labs(x = "Claws:Partition", y = "Visit") +
+% 	scale_fill_brewer(palette = "Set1") +
+%     theme(legend.position = "bottom",
+% 				legend.title = element_text(size = 8),
+% 				legend.text = element_text(size = 8),
+% 				plot.title = element_text(size = 12),
+% 				axis.title = element_text(size = 10),
+% 				axis.text.x = element_text(size = 8, angle = 90),
+% 				axis.text.y = element_text(size = 8),
+% 				axis.ticks = element_blank())
+% @
+% \caption{Claw length categories across four areas for each visit. The y-axis represents each visit in descending order from top to bottom. On the x-axis from left to right, represents each of four paritians of the \texttt{kml} implementation. The height of each rectangle and y-axes represent the proportion of does in that specific visit or time point. The width of the x-axis represent the proportion of a particular ordinal category it represents.}\label{kml4claw}
+% \end{figure}
+
+% % no kindlings
+% \begin{figure}
+% <<king4kmll, results='asis', results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.height=7, fig.width=10>>=
+%  # cluster
+% ggplot(df_longdf) +
+%   geom_bar(aes(x = NoKindlings )) +
+%   theme_minimal() +
+%   labs(x = "No. of kindlings", y = "Count") +
+% 	scale_fill_brewer(palette = "Set3") +
+%   theme(
+%     legend.position = "bottom",
+%     panel.grid.major = element_blank(),
+%     panel.grid.minor = element_blank()) +
+% 	facet_wrap(~Area)
+% @
+% \caption{Claw length categories across four areas for each visit. The y-axis represents each visit in descending order from top to bottom. On the x-axis from left to right, represents each of four paritians of the \texttt{kml} implementation. The height of each rectangle and y-axes represent the proportion of does in that specific visit or time point. The width of the x-axis represent the proportion of a particular ordinal category it represents.}\label{kind4kml}
+% \end{figure}
+\clearpage
+\newpage
+\section{Mixed models of non-partitions and partitions}
+
+\begin{table}[h]
+\caption{With two and four partitions, the mixed model estimates of variables with evidence of significant effect with random effects of area, ear tag and age per ear tag, weight per ear tag. }\label{mixed1}
+\centering
+\begin{longtable}{c|c|c|c|c}
+\hline
+Two partition & Estimate & Std.Error & CI & $p value$\\
+\hline
+visit & -0.005 & 0.002 & -0.001,-0.009 & 0.019\\
+\hline
+\end{longtable}
+\begin{tabular}{c|c|c|c|c}
+\hline
+Four partition & Estimate & Std.Error & CI & $p value$\\
+\hline
+visit & -0.005 & 0.002 & -0.001,-0.009 & 0.025\\
+\hline
+\end{tabular}
+<<conkml, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = FALSE, fig.height=3, fig.width=4, fig.align="centre">>=
+# load("../Data/kml4lmer.Rda")
+# knitr::kable(kml4lmer, row.names = FALSE, booktabs = FALSE, format = "latex", align = "c", longtable = TRUE)
+# load("../Data/kml2lmer.Rda")
+# knitr::kable(kml2lmer, row.names = FALSE, booktabs = FALSE, format = "latex", align = "c", longtable = TRUE)
+@
+\end{table}
+
+The mixed model results overall showed that the variable visit had evidence of significance effect to mean scores when the two and four partitions were included in the model, seen in Table~\ref{mixed1}. 
+
+\section{Robustness of \texttt{kml} via two experiments}
+
+Pre imputation sample sizes are expected to be equal across random deletions of original data. This is because deletion occured prior to \texttt{kml} implementation was deletion of random observations. Since each row represented results of visits per ear tag, those missing scores per visits were later replaced by imputation. Unequal sample sizes as in for 20\% random deletion of data is due that when all visits within the same ear tag were removed and cannot be imputated due to an entire loss of the same ear tag. The post imputation sample sizes are expected to be lower than the pre imputation as observations were deleted from already imputated data.
+
+
+% sample size
+\vspace{0mm}
+\begin{table}[h]
+\caption{Pre imputation sample sizes per cluster which is expected to be equal to imputated data set without deletion. The deletion for pre imputation is done prior to imputation and also prior to \texttt{kml} implementation for four partitions. Since \texttt{kml} partitioning required full trajectories, each implementation required thirteen time points per individual (unique) doe or ear tag.}\label{tab_loss}
+\centering
+\begin{longtable}{c|c|c|c|c|c}
+\hline
+\% loss & A & B & C & D & Total\\
+\hline
+0 \% & 3042 & 1092 & 312 & 26 & 4472\\
+\hline
+1 \% & 2795 & 1183 & 468 & 26 & 4472\\
+\hline
+5 \% & 2860 & 1261 & 325 & 26 & 4472\\
+\hline
+10 \% & 2782 & 1144 & 494 & 39 & 4459\\
+\hline
+20 \% & 2873 & 1183 & 299 & 39 & 4394\\
+\hline
+\end{longtable}
+<<tab_loss, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.align= "centre",  fig.width=5, fig.height=4>>=
+# load("../Figures/tab_loss.Rda")
+# knitr::kable(tab_loss, row.names = FALSE, booktabs = FALSE, format = "latex", align = "c", longtable = TRUE)
+@
+\end{table}
+
+% sample size
+\begin{table}[h]
+\caption{Post imputation sample size per cluster which is expected to be lower than data with imputation as deletion was performed after imputation and \texttt{kml} implementation for four partitions.}\label{tab_loss0}
+\centering
+\begin{longtable}{c|c|c|c|c|c}
+\hline
+\% loss & A & B & C & D & Total\\
+\hline
+0 \% & 2951 & 1183 & 312 & 26 & 4472\\
+\hline
+1 \% & 2920 & 1174 & 308 & 25 & 4427\\
+\hline
+5 \% & 2809 & 1121 & 295 & 23 & 4248\\
+\hline
+10 \% & 2668 & 1056 & 277 & 24 & 4025\\
+\hline
+20 \% & 2341 & 964 & 255 & 18 & 3578\\
+\hline
+\end{longtable}
+<<tab_loss0, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.align= "centre",  fig.width=5, fig.height=4>>=
+# load("../Data/tab_loss0.Rda")
+# knitr::kable(tab_loss0, row.names = FALSE, booktabs = FALSE, format = "latex", align = "c", longtable = TRUE)
+@
+\end{table}
+\newpage
+
+\subsection{Pre imputation robustness checks}
+The comparisons for each \texttt{kml} partition was made for systematic random deletion of data prior to imputation. Each graphic indicates the sample size or number of observations for the cluster. Deviations are marginal to the 0 \% curve, for example in Figures~\ref{preAtraj}, in Figure~\ref{preBtraj} and Figure~\ref{preCtraj}. When all the partitions are observed collectively, the largest deviation is seen in the 20 \% random deletion (see Figure~\ref{preABCD}) when compared to 1 \% and 5 \%. For parition C, the marked deviation in the 5 \% curve from the 0 \% curve when compared with higher volumes of deletion, for example in Figure~\ref{preABCD} could be a result of the random deletion of whole rabbits, i.e. all entries of the same ear tag. 
+
+\begin{figure}[h]
+\centering
+<<lossAkml, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.align= "centre", fig.width=6, fig.height=3>>=
+# loss plot for kml cluster A
+
+a = paste( "0 %", " (", tab_loss$A[1], ")", sep = "")
+b = paste( "1 %", " (", tab_loss$A[2], ")", sep = "")
+c = paste( "5 %", " (", tab_loss$A[3], ")", sep = "")
+d = paste( "10 %", " (", tab_loss$A[4], ")", sep = "")
+e = paste( "20 %", " (", tab_loss$A[5], ")", sep = "")
+ggplot(loss_long[loss_long$value == "A",], aes(x = visit, y = as.numeric(score), group = loss,
+                      colour = loss)) +
+  geom_smooth(method = "loess", se = FALSE) +
+	theme_gray() +
+  geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+  scale_colour_discrete(name = "% loss", breaks = c("zero percent loss", "one percent loss", "five percent loss", "ten percent loss", "twenty percent loss"),
+         labels = c(a,b,c,d,e)) +
+  labs(y = "Score") +
+  theme(legend.position = "bottom",
+  			legend.text = element_text(size = 8)) +
+  scale_x_discrete(name = "Visit",
+                   limits = factor(c(1,2,3,4,5,6,7,8,9,10,11,12,13)))
+
+# # loss plot for kml cluster A
+# ggplot(loss_long[loss_long$value == "A",], aes(x = visit, y = as.numeric(score), group = loss, 
+#                       colour = loss)) +
+#   geom_smooth(method = "loess", se = FALSE) +
+#   geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+#   scale_colour_discrete(name = "% loss (n)", 
+#                         labels = c(a,b,c,d, e)) +
+#   labs(y = "score") + 
+#   theme(legend.position = "bottom") + 
+#   expand_limits(x=c(1,13), y=c(3.7, 4)) + 
+#   scale_x_discrete(name = "visit", 
+#                    limits = factor(c(1,2,3,4,5,6,7,8,9,10,11,12,13)))
+
+
+
+
+
+@
+\caption{Comparison of pre imputation optimal partition A from random deletion of data for two partitions with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}. Indicated between vertical red lines are the northern hemisphere winter season.}\label{preAtraj}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+<<lossBkml, results='asis', results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.align= "centre",  fig.width=6, fig.height=3>>=
+# loss plot for kml cluster A
+a = paste( "0 %", " (", tab_loss$B[1], ")", sep = "")
+b = paste( "1 %", " (", tab_loss$B[2], ")", sep = "")
+c = paste( "5 %", " (", tab_loss$B[3], ")", sep = "")
+d = paste( "10 %", " (", tab_loss$B[4], ")", sep = "")
+e = paste( "20 %", " (", tab_loss$B[5], ")", sep = "")
+ggplot(loss_long[loss_long$value == "B",], aes(x = visit, y = as.numeric(score), group = loss,
+                      colour = loss)) +
+  geom_smooth(method = "loess", se = FALSE) +
+	theme_gray() +
+  geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+  scale_colour_discrete(name = "% loss", breaks = c("zero percent loss", "one percent loss", "five percent loss", "ten percent loss", "twenty percent loss"),
+         labels = c(a,b,c,d,e)) +
+  labs(y = "Score") +
+  theme(legend.position = "bottom",
+  			legend.text = element_text(size = 8)) +
+  scale_x_discrete(name = "Visit",
+                   limits = factor(c(1,2,3,4,5,6,7,8,9,10,11,12,13)))
+@
+\caption{Comparison of pre imputation optimal partition B from random deletion of data for two partitions with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}. Indicated between vertical red lines are the northern hemisphere winter season.}\label{preBtraj}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+<<lossCkml0, results='asis', results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.align= "centre",  fig.width=6, fig.height=3>>=
+a = paste( "0 %", " (", tab_loss$C[1], ")", sep = "")
+b = paste( "1 %", " (", tab_loss$C[2], ")", sep = "")
+c = paste( "5 %", " (", tab_loss$C[3], ")", sep = "")
+d = paste( "10 %", " (", tab_loss$C[4], ")", sep = "")
+e = paste( "20 %", " (", tab_loss$C[5], ")", sep = "")
+ggplot(loss_long[loss_long$value == "C",], aes(x = visit, y = as.numeric(score), group = loss,
+                      colour = loss)) +
+  geom_smooth(method = "loess", se = FALSE) +
+	theme_gray() +
+  geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+  scale_colour_discrete(name = "% loss", breaks = c("zero percent loss", "one percent loss", "five percent loss", "ten percent loss", "twenty percent loss"),
+         labels = c(a,b,c,d,e)) +
+  labs(y = "Score") +
+  theme(legend.position = "bottom",
+  			legend.text = element_text(size = 8)) +
+  scale_x_discrete(name = "Visit",
+                   limits = factor(c(1,2,3,4,5,6,7,8,9,10,11,12,13)))
+@
+\caption{Comparison of pre imputation optimal partition C from random deletion of data for two partitions with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}. Indicated between vertical red lines are the northern hemisphere winter season.}\label{preCtraj}
+\end{figure}
+
+% \begin{figure}
+% <<lossDkml0, results='asis', results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.align= "centre",  fig.width=5, fig.height=4>>=
+% ggplot(loss_long[loss_long$value == "D",], aes(x = visit, y = as.numeric(score), group = loss,
+%                       colour = loss)) +
+%   geom_smooth(method = "loess", se = FALSE) +
+%   geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+%   scale_colour_discrete(name = "% loss", breaks = c("zero percent loss", "one percent loss", "five percent loss", "ten percent loss", "twenty percent loss"),
+%                         labels = c("0 %", "1 %", "5 %", "10 %", "20 %")) +
+%   labs(y = "Score") +
+%   theme(legend.position = "bottom") +
+%   expand_limits(x=c(1,13), y=c(3.7, 4)) +
+%   scale_x_discrete(name = "Visit",
+%                    limits = factor(c(1,2,3,4,5,6,7,8,9,10,11,12,13)))
+% @
+% \caption{Comparison of pre imputation optimal partition D from random deletion of data for two partitions with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}. Indicated between vertical red lines are the northern hemisphere winter season.}\label{preDtraj}
+% \end{figure}
+% % kml 4 and 2 deleted scores
+% Visual inspections are in Figure~\ref{kmlrobust1}, Figure~\ref{kmlrobust5}, Figure~\ref{kmlrobust10} and Figure~\ref{kmlrobust20}. The peaks of cluster D in the 1\% random deletion scenario is within the winter months and likens to cluster A in the scenario without random deletion of data. The gradual increase of cluster C scores are also consistent with the cluster B in the original 4 kml cluster scenario. The peaks and troughs and trends in the original scenarios are subdued by magnitude to the loss of data experienced.
+
+\begin{figure}[h]
+\centering
+<<kmlrobust1_0, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, fig.align= "centre",  fig.width=10, fig.height=7>>=
+a = paste( "A", " (", opkml4counts$n[1], ")", sep = "")
+b = paste( "B", " (", opkml4counts$n[2], ")", sep = "")
+c = paste( "C", " (", opkml4counts$n[3], ")", sep = "")
+d = paste( "D", " (", opkml4counts$n[4], ")", sep = "")
+ggplot(op, aes(x = visit, y = score, group = kmlclusters4op, colour = kmlclusters4op)) +
+  geom_smooth(method = "loess") +
+	theme_gray() +
+  scale_colour_discrete(name = "Pre imputation 1%\nloss (n)", breaks = c("A", "B", "C", "D"),
+                    labels = c(a, b, c, d)) +
+  geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted")  +
+  theme(legend.position = "bottom",
+				legend.title = element_text(size = 8),
+				legend.text = element_text(size = 8),
+				axis.title = element_text(size = 8)) +
+	labs(y = "Score", x = "Visit") +
+  expand_limits(x=c(1,13), y=c(3.5, 5.5)) +
+  scale_x_discrete(name = "Visit",
+                   limits = factor(c(1,2,3,4,5,6,7,8,9,10,11,12,13))) -> preopkmlclusters4
+
+a = paste( "A", " (", fpkml4counts$n[1], ")", sep = "")
+b = paste( "B", " (", fpkml4counts$n[2], ")", sep = "")
+c = paste( "C", " (", fpkml4counts$n[3], ")", sep = "")
+d = paste( "D", " (", fpkml4counts$n[4], ")", sep = "")
+
+ggplot(fp, aes(x = visit, y = score, group = kmlclusters4fp, colour = kmlclusters4fp)) +
+  geom_smooth(method = "loess") +
+		theme_gray() +
+  scale_colour_discrete(name = "Pre imputation 5%\nloss (n)", breaks = c("A", "B", "C", "D"),
+                        labels=c(a, b, c, d)) +
+  geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +labs(y = "Score") +
+ theme(legend.position = "bottom",
+				legend.title = element_text(size = 8),
+				legend.text = element_text(size = 8),
+				axis.title = element_text(size = 8)) + 
+  expand_limits(x=c(1,13), y=c(3.5, 5.5)) +
+  scale_x_discrete(name = "Visit",
+                   limits = factor(c(1,2,3,4,5,6,7,8,9,10,11,12,13))) -> prefpkmlclusters4
+
+a = paste( "A", " (", tpkml4counts$n[1], ")", sep = "")
+b = paste( "B", " (", tpkml4counts$n[2], ")", sep = "")
+c = paste( "C", " (", tpkml4counts$n[3], ")", sep = "")
+d = paste( "D", " (", tpkml4counts$n[4], ")", sep = "")
+
+ggplot(tp, aes(x = visit, y = score, group = kmlclusters4tp, colour = kmlclusters4tp)) +
+  geom_smooth(method = "loess") +
+		theme_gray() +
+  scale_colour_discrete(name = "Pre imputation 10%\nloss (n)", breaks = c("A", "B", "C", "D"),
+                        labels=c(a, b, c, d)) +
+  geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") + labs( y = "Score") +
+ theme(legend.position = "bottom",
+				legend.title = element_text(size = 8),
+				legend.text = element_text(size = 8),
+				axis.title = element_text(size = 8)) + 
+  expand_limits(x=c(1,13), y=c(3.5, 5.5)) +
+  scale_x_discrete(name = "Visit",
+                   limits = factor(c(1,2,3,4,5,6,7,8,9,10,11,12,13))) -> pretpkmlclusters4
+
+a = paste( "A", " (", twentypkml4counts$n[1], ")", sep = "")
+b = paste( "B", " (", twentypkml4counts$n[2], ")", sep = "")
+c = paste( "C", " (", twentypkml4counts$n[3], ")", sep = "")
+d = paste( "D", " (", twentypkml4counts$n[4], ")", sep = "")
+ggplot(twentyp, aes(x = visit, y = score, group = kmlclusters4twentyp, colour = kmlclusters4twentyp)) +
+  geom_smooth(method = "loess") +
+		theme_gray() +
+	labs(y = "Score") +
+  scale_colour_discrete(name = "Pre imputation 20%\nloss (n)", breaks = c("A", "B", "C", "D"),
+                        labels=c(a, b, c, d)) +
+  geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+  theme(legend.position = "bottom",
+				legend.title = element_text(size = 8),
+				legend.text = element_text(size = 8),
+				axis.title = element_text(size = 8)) +
+  expand_limits(x=c(1,13), y=c(3.5, 5.5)) +
+  scale_x_discrete(name = "Visit",
+                   limits = factor(c(1,2,3,4,5,6,7,8,9,10,11,12,13)))-> pretwentykmlclusters4
+
+
+plot_grid( preopkmlclusters4, prefpkmlclusters4, pretpkmlclusters4, pretwentykmlclusters4,
+  align="h")
+
+@
+\caption{Trajectory of scores with random deletion for four partitions (pre-imputation) with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}.Indicated between vertical red lines are the northern hemisphere winter season.}\label{preABCD}
+\end{figure}
+
+
+% \begin{figure}
+% \centering
+% <<kmlrobust50, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, fig.align= "centre",  fig.width=6, fig.height=3>>=
+% 
+% 
+% a = paste( "A", " (", tpkml4counts$n[1], ")", sep = "")
+% b = paste( "B", " (", tpkml4counts$n[2], ")", sep = "")
+% c = paste( "C", " (", tpkml4counts$n[3], ")", sep = "")
+% d = paste( "D", " (", tpkml4counts$n[4], ")", sep = "")
+% 
+% ggplot(tp, aes(x = visit, y = score, group = kmlclusters4tp, colour = kmlclusters4tp)) +
+%   geom_smooth(method = "loess") +
+% 		theme_gray() +
+%   scale_colour_discrete(name = "Ten percent\nloss", breaks = c("A", "B", "C", "D"),
+%                         labels=c(a, b, c, d)) +
+%   geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") + labs( y = "Score") +
+%   theme(legend.position = "bottom",
+%   			axis.text.x = element_text(size = 8)) + 
+%   expand_limits(x=c(1,13), y=c(3.5, 5.5)) +
+%   scale_x_discrete(name = "Visit",
+%                    limits = factor(c(1,2,3,4,5,6,7,8,9,10,11,12,13))) -> pretpkmlclusters4
+% 
+% a = paste( "A", " (", twentypkml4counts$n[1], ")", sep = "")
+% b = paste( "B", " (", twentypkml4counts$n[2], ")", sep = "")
+% c = paste( "C", " (", twentypkml4counts$n[3], ")", sep = "")
+% d = paste( "D", " (", twentypkml4counts$n[4], ")", sep = "")
+% ggplot(twentyp, aes(x = visit, y = score, group = kmlclusters4twentyp, colour = kmlclusters4twentyp)) +
+%   geom_smooth(method = "loess") +
+% 		theme_gray() +
+% 	labs(y = "Score") +
+%   scale_colour_discrete(name = "Four partitions (n)", breaks = c("A", "B", "C", "D"),
+%                         labels=c(a, b, c, d)) +
+%   geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+%   theme(legend.position = "bottom",
+%   			axis.text.x = element_text(size = 8)) +
+%   expand_limits(x=c(1,13), y=c(3.5, 5)) +
+%   scale_x_discrete(name = "Visit",
+%                    limits = factor(c(1,2,3,4,5,6,7,8,9,10,11,12,13)))-> pretwentykmlclusters4
+% 
+% plot_grid( pretpkmlclusters4, pretwentykmlclusters4,
+%   labels = c('A', 'B'),
+%   align="h")
+% @
+% \caption{Trajectory of scores with 5\% random deletion for four partitions (pre-imputation) with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}. Indicated between vertical red lines are the northern hemisphere winter season.}\label{preABCDfp}
+% \end{figure}
+
+% \begin{figure}
+% \centering
+% <<kmlrobust50, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, fig.align= "centre",  fig.width=5, fig.height=4>>=
+% 
+% a = paste( "A", " (", fpkml4counts$n[1], ")", sep = "")
+% b = paste( "B", " (", fpkml4counts$n[2], ")", sep = "")
+% c = paste( "C", " (", fpkml4counts$n[3], ")", sep = "")
+% d = paste( "D", " (", fpkml4counts$n[4], ")", sep = "")
+% 
+% ggplot(fp, aes(x = visit, y = score, group = kmlclusters4fp, colour = kmlclusters4fp)) +
+%   geom_smooth(method = "loess") +
+%   scale_colour_discrete(name = "Five percent\nloss", breaks = c("A", "B", "C", "D"),
+%                         labels=c(a, b, c, d)) +
+%   geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +labs(y = "Score") +
+%   theme(legend.position = "bottom") + 
+%   expand_limits(x=c(1,13), y=c(3.5, 5.5)) +
+%   scale_x_discrete(name = "visit",
+%                    limits = factor(c(1,2,3,4,5,6,7,8,9,10,11,12,13)))
+% @
+% \caption{Trajectory of scores with 5\% random deletion for four partitions (pre-imputation) with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}. Indicated between vertical red lines are the northern hemisphere winter season.}\label{preABCDfp}
+% \end{figure}
+
+% \begin{figure}
+% \centering
+% <<kmlrobust100, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, fig.align= "centre",  fig.width=5, fig.height=4>>=
+% a = paste( "A", " (", tpkml4counts$n[1], ")", sep = "")
+% b = paste( "B", " (", tpkml4counts$n[2], ")", sep = "")
+% c = paste( "C", " (", tpkml4counts$n[3], ")", sep = "")
+% d = paste( "D", " (", tpkml4counts$n[4], ")", sep = "")
+% 
+% ggplot(tp, aes(x = visit, y = score, group = kmlclusters4tp, colour = kmlclusters4tp)) +
+%   geom_smooth(method = "loess") +
+%   scale_colour_discrete(name = "Ten percent\nloss", breaks = c("A", "B", "C", "D"),
+%                         labels=c(a, b, c, d)) +
+%   geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") + labs( y = "Score") +
+%   theme(legend.position = "bottom") + 
+%   expand_limits(x=c(1,13), y=c(3.5, 5.5)) +
+%   scale_x_discrete(name = "Visit",
+%                    limits = factor(c(1,2,3,4,5,6,7,8,9,10,11,12,13)))
+% 
+% @
+% \caption{Trajectory of scores with 10\% random deletion for four partitions (pre-imputation) with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}. Indicated between vertical red lines are the northern hemisphere winter season.}\label{preABCDtp}
+% \end{figure}
+
+% \begin{figure}
+% \centering
+% <<kmlrobust200, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, fig.align= "centre",  fig.width=5, fig.height=4>>=
+% a = paste( "A", " (", twentypkml4counts$n[1], ")", sep = "")
+% b = paste( "B", " (", twentypkml4counts$n[2], ")", sep = "")
+% c = paste( "C", " (", twentypkml4counts$n[3], ")", sep = "")
+% d = paste( "D", " (", twentypkml4counts$n[4], ")", sep = "")
+% ggplot(twentyp, aes(x = visit, y = score, group = kmlclusters4twentyp, colour = kmlclusters4twentyp)) +
+%   geom_smooth(method = "loess") +
+% 	labs(y = "Score") +
+%   scale_colour_discrete(name = "Four partitions (n)", breaks = c("A", "B", "C", "D"),
+%                         labels=c(a, b, c, d)) +
+%   geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+%   theme(legend.position = "bottom") +
+%   expand_limits(x=c(1,13), y=c(3.5, 5)) +
+%   scale_x_discrete(name = "Visit",
+%                    limits = factor(c(1,2,3,4,5,6,7,8,9,10,11,12,13)))
+% @
+% \caption{Trajectory of scores with 20\% random deletion for four partitions (pre-imputation) with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}.Indicated between vertical red lines are the northern hemisphere winter season. }\label{preABCDtwentyp}
+% \end{figure}
+
+\clearpage
+
+\subsection{Post imputation robustness checks}
+
+Each graphic indicates the sample size or number of observations for the cluster. Deviations are marginal to the 0 \% curve, for example in Figures~\ref{postABCD}. When all the partitions are observed collectively similar to the pre imputation analysis, the largest deviation is also seen in the 20 \% random deletion when compared to other random deletion.
+
+\begin{figure}[h]
+\centering
+<<postAtraj, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.align= "centre",  fig.width=6, fig.height=3>>=
+a = paste( "0 %", " (", tab_loss0$A[1], ")", sep = "")
+b = paste( "1 %", " (", tab_loss0$A[2], ")", sep = "")
+c = paste( "5 %", " (", tab_loss0$A[3], ")", sep = "")
+d = paste( "10 %", " (", tab_loss0$A[4], ")", sep = "")
+e = paste( "20 %", " (", tab_loss0$A[5], ")", sep = "")
+ggplot(er_long0[er_long0$kml.clusters == "A",],
+       aes(x = visit, y = score, group = variable, colour = variable)) +
+  geom_smooth(method = "loess", se = FALSE) +
+	theme_gray() +
+  geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+  scale_colour_discrete(name = "% loss (n)", labels = c(a,b,c,d, e)) +
+  theme(legend.position = "bottom",
+  			legend.text = element_text(size = 8)) + labs(x = "Visit", y = "Score")
+# knitr::include_graphics("../Figures/postAtraj.png")
+@
+\caption{Comparison of post imputation optimal partition A from random deletion of data for two partitions with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}. Indicated between vertical red lines are the northern hemisphere winter season.}\label{postAtraj}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+<<postBtraj, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.align= "centre",  fig.width=6, fig.height=3>>=
+# knitr::include_graphics("../Figures/postBtraj.png")
+a = paste( "0 %", " (", tab_loss0$B[1], ")", sep = "")
+b = paste( "1 %", " (", tab_loss0$B[2], ")", sep = "")
+c = paste( "5 %", " (", tab_loss0$B[3], ")", sep = "")
+d = paste( "10 %", " (", tab_loss0$B[4], ")", sep = "")
+e = paste( "20 %", " (", tab_loss0$B[5], ")", sep = "")
+ggplot(er_long0[er_long0$kml.clusters == "B",], aes(x = visit, y = score, group = variable, colour = variable)) +
+	geom_smooth(method = "loess", se = FALSE) +
+	theme_gray() +
+	geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") + scale_colour_discrete(name = "% loss", labels = c(a,b,c,d, e)) +
+theme(legend.position = "bottom",
+  			legend.text = element_text(size = 8)) + labs(x = "Visit", y = "Score")
+@
+\caption{Comparison of post imputation optimal partition B from random deletion of data for two partitions with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}. Indicated between vertical red lines are the northern hemisphere winter season. }\label{postBtraj}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+<<postCtraj, results='asis', results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.align= "centre", fig.width=6, fig.height=3>>=
+# knitr::include_graphics("../Figures/postCtraj.png")
+a = paste( "0 %", " (", tab_loss0$C[1], ")", sep = "")
+b = paste( "1 %", " (", tab_loss0$C[2], ")", sep = "")
+c = paste( "5 %", " (", tab_loss0$C[3], ")", sep = "")
+d = paste( "10 %", " (", tab_loss0$C[4], ")", sep = "")
+e = paste( "20 %", " (", tab_loss0$C[5], ")", sep = "")
+ggplot(er_long0[er_long0$kml.clusters == "C",],
+       aes(x = visit, y = score, group = variable,
+                                                    colour = variable)) +
+  geom_smooth(method = "loess", se = FALSE) +
+	theme_gray() +
+  geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+  theme(legend.position = "bottom",
+  			legend.text = element_text(size = 8)) +
+  expand_limits(x=c(1,13), y=c(3.7, 4)) +
+  scale_colour_discrete(name = "% loss (n)", labels = c(a,b,c,d, e)) +
+  scale_x_discrete(name = "Visit",
+                   limits = factor(c(1,2,3,4,5,6,7,8,9,10,11,12,13))) + labs(x = "Visit", y = "Score")
+@
+\caption{Comparison of post imputation optimal partition C from random deletion of data for two partitions with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}. Indicated between vertical red lines are the northern hemisphere winter season.}\label{postCtraj}
+\end{figure}
+
+
+% \begin{figure}
+% <<postDtraj, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, eval = TRUE, fig.height=7, fig.width=10>>=
+% # knitr::include_graphics("../Figures/postDtraj.png")
+% a = paste( "0 %", " (", tab_loss0$D[1], ")", sep = "")
+% b = paste( "1 %", " (", tab_loss0$D[2], ")", sep = "")
+% c = paste( "5 %", " (", tab_loss0$D[3], ")", sep = "")
+% d = paste( "10 %", " (", tab_loss0$D[4], ")", sep = "")
+% e = paste( "20 %", " (", tab_loss0$D[5], ")", sep = "")
+% ggplot(er_long0[er_long0$kml.clusters == "D",], aes(x = visit, y = score, group = variable, colour = variable)) +
+% 	geom_smooth(method = "loess", se = FALSE) +
+% 	theme_gray() +
+% 	geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") + scale_colour_discrete(name = "% loss", labels = c(a,b,c,d, e)) +
+% theme(legend.position = "bottom") 
+% @
+% \caption{Comparison of post imputation optimal partition D from random deletion of data for two partitions with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}. Indicated between vertical red lines are the northern hemisphere winter season.}\label{postDtraj}
+% \end{figure}
+
+% % kml 4 and 2 deleted scores
+% Visual inspections are in Figure~\ref{kmlrobust1}, Figure~\ref{kmlrobust5}, Figure~\ref{kmlrobust10} and Figure~\ref{kmlrobust20}. The peaks of cluster D in the 1\% random deletion scenario is within the winter months and likens to cluster A in the scenario without random deletion of data. The gradual increase of cluster C scores are also consistent with the cluster B in the original 4 kml cluster scenario. The peaks and troughs and trends in the original scenarios are subdued by magnitude to the loss of data experienced.
+
+\begin{figure}[h]
+\centering
+<<kmlrobust1, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, fig.height=7, fig.width=10, fig.align="centre">>=
+# par(mrow = c(2,2))
+# knitr::include_graphics("../Figures/postABCDop.png")
+# [width=3cm, height=4cm]
+# knitr::include_graphics("../Figures/postABCDfp.png")
+# knitr::include_graphics("../Figures/postABCDtp.png")
+# knitr::include_graphics("../Figures/postABCDtwentyp.png")
+load("../Data/df_onepercentloss0.Rda")
+a = paste( "A", " (", opkml4counts0$n[1], ")", sep = "")
+b = paste( "B", " (", opkml4counts0$n[2], ")", sep = "")
+c = paste( "C", " (", opkml4counts0$n[3], ")", sep = "")
+d = paste( "D", " (", opkml4counts0$n[4], ")", sep = "")
+ggplot(df_onepercentloss0, aes(x = visit, y = meanPDheel.y, group = kmlclusters4, colour = kmlclusters4)) +
+	geom_smooth(method = "loess") +
+	theme_gray() +
+	scale_colour_discrete(name = "Post imputation 1 %\nloss partitions (n)", breaks = c("A", "B", "C", "D"),  labels=c(a, b, c, d)) +
+	geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+	theme(legend.position = "bottom",
+				legend.title = element_text(size = 8),
+				legend.text = element_text(size = 8),
+				axis.title = element_text(size = 8)) + labs(y = "Score") +
+	expand_limits(x=c(1,13), y=c(3.5, 5.5)) +
+	scale_x_discrete(name = "Visit",
+									 limits = factor(c(1,2,3,4,5,6,7,8,9,10,11,12,13))) -> postopkmlclusters4
+
+load("../Data/df_fivepercentloss0.Rda")
+a = paste( "A", " (", fpkml4counts0$n[1], ")", sep = "")
+b = paste( "B", " (", fpkml4counts0$n[2], ")", sep = "")
+c = paste( "C", " (", fpkml4counts0$n[3], ")", sep = "")
+d = paste( "D", " (", fpkml4counts0$n[4], ")", sep = "")
+
+
+ggplot(df_fivepercentloss0, aes(x = visit, y = meanPDheel.y, 
+                                group = kmlclusters4, colour = kmlclusters4)) +
+	geom_smooth(method = "loess") +
+		theme_gray() +
+	scale_colour_discrete(name = "Post imputation 5 % \nloss partitions (n)", breaks = c("A", "B", "C", "D"), 
+												labels=c(a, b, c, d)) +
+  labs( y = "Score") +
+	geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+	theme(legend.position = "bottom",
+				legend.title = element_text(size = 8),
+				legend.text = element_text(size = 8),
+				axis.title = element_text(size = 8)) + 
+	expand_limits(x=c(1,13), y=c(3.5, 5.5)) + 
+	scale_x_discrete(name = "Visit", 
+									 limits = factor(c(1,2,3,4,5,6,7,8,9,10,11,12,13))) -> postfpkmlclusters4
+
+load("../Data/df_tenpercentloss0.Rda")
+a = paste( "A", " (", tpkml4counts0$n[1], ")", sep = "")
+b = paste( "B", " (", tpkml4counts0$n[2], ")", sep = "")
+c = paste( "C", " (", tpkml4counts0$n[3], ")", sep = "")
+d = paste( "D", " (", tpkml4counts0$n[4], ")", sep = "")
+ggplot(df_tenpercentloss0, aes(x = visit, y = meanPDheel.y, group = kmlclusters4, colour = kmlclusters4)) +
+	geom_smooth(method = "loess") +
+	theme_gray() +
+	scale_colour_discrete(name = "Post imputation 10 % \nloss partitions (n)", breaks = c("A", "B", "C", "D"),
+												labels=c(a, b, c, d)) +
+	geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+	theme(legend.position = "bottom",
+				legend.title = element_text(size = 8),
+				legend.text = element_text(size = 8),
+				axis.title = element_text(size = 8)) + labs(y = "Score") +
+expand_limits(x=c(1,13), y=c(3.5, 5.5)) +
+scale_x_discrete(name = "Visit",
+								 limits = factor(c(1,2,3,4,5,6,7,8,9,10,11,12,13))) -> posttpkmlclusters4
+
+load("../Data/df_twentypercentloss0.Rda")
+a = paste( "A", " (", twentypkml4counts0$n[1], ")", sep = "")
+b = paste( "B", " (", twentypkml4counts0$n[2], ")", sep = "")
+c = paste( "C", " (", twentypkml4counts0$n[3], ")", sep = "")
+d = paste( "D", " (", twentypkml4counts0$n[4], ")", sep = "")
+ggplot(df_twentypercentloss0, aes(x = visit, y = meanPDheel.y, group = kmlclusters4, colour = kmlclusters4)) +
+	geom_smooth(method = "loess") +
+	theme_gray() +
+	scale_colour_discrete(name = "Post imputation 20 % \nloss partitions (n)", breaks = c("A", "B", "C", "D"),
+												labels=c(a, b, c, d)) +
+	geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+	theme(legend.position = "bottom",
+				legend.title = element_text(size = 8),
+				legend.text = element_text(size = 8),
+				axis.title = element_text(size = 8)) + labs(y = "Score") +
+expand_limits(x=c(1,13), y=c(3.5, 5.5)) +
+scale_x_discrete(name = "Visit",
+								 limits = factor(c(1,2,3,4,5,6,7,8,9,10,11,12,13))) -> posttwentykmlclusters4
+
+plot_grid( postopkmlclusters4, postfpkmlclusters4, posttpkmlclusters4, posttwentykmlclusters4,
+  align="h")
+
+@
+\caption{Trajectory of scores with random deletion for for four partitions (post imputation) with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}. Indicated between vertical red lines are the northern hemisphere winter season. Low partition D counts are not reflected. }\label{postABCD}
+\end{figure}
+
+% \begin{figure}
+% \centering
+% <<kmlrobust5, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, fig.height=3, fig.width=6, fig.align="centre">>=
+% knitr::include_graphics("../Figures/postABCDfp.png")
+% # a = paste( "A", " (", fpkml4counts0$n[1], ")", sep = "")
+% # b = paste( "B", " (", fpkml4counts0$n[2], ")", sep = "")
+% # c = paste( "C", " (", fpkml4counts0$n[3], ")", sep = "")
+% # d = paste( "D", " (", fpkml4counts0$n[4], ")", sep = "")
+% #
+% # ggplot(df_onepercentloss0, aes(x = visit, y = meanPDheel.y, group = kmlclusters4, colour = kmlclusters4)) +
+% # 	geom_smooth(method = "loess") +
+% # 	scale_colour_discrete(name = "Post imputation 1 %\nloss partitions (n)", breaks = c("A", "B", "C", "D"),  labels=c(a, b, c, d)) +
+% # 	geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+% # 	theme(legend.position = "bottom",
+% # 				legend.title = element_text(size = 10),
+% # 				legend.text = element_text(size = 8),
+% # 				plot.title = element_text(size = 12),
+% # 				axis.title = element_text(size = 12)) + labs(y = "score") +
+% # 	expand_limits(x=c(1,13), y=c(3.5, 5.5)) +
+% # 	scale_x_discrete(name = "visit",
+% # 									 limits = factor(c(1,2,3,4,5,6,7,8,9,10,11,12,13)))									 limits = factor(c(1,2,3,4,5,6,7,8,9,10,11,12,13)))
+% 
+% @
+% \caption{Trajectory of scores with 5\% random deletion of four partitions (post imputation) with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}. Indicated between vertical red lines are the northern hemisphere winter season.}\label{postABCDfp}
+% \end{figure}
+% 
+% \begin{figure}
+% \centering
+% <<kmlrobust10, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, fig.height=3, fig.width=6, fig.align="centre">>=
+% knitr::include_graphics("../Figures/postABCDtp.png")
+% # a = paste( "A", " (", tpkml4counts0$n[1], ")", sep = "")
+% # b = paste( "B", " (", tpkml4counts0$n[2], ")", sep = "")
+% # c = paste( "C", " (", tpkml4counts0$n[3], ")", sep = "")
+% # d = paste( "D", " (", tpkml4counts0$n[4], ")", sep = "")
+% #
+% # ggplot(df_tenpercentloss0, aes(x = visit, y = meanPDheel.y, group = kmlclusters4, colour = kmlclusters4)) +
+% # 	geom_smooth(method = "loess") +
+% # 	scale_colour_discrete(name = "Post imputation 10 % \nloss partitions (n)", breaks = c("A", "B", "C", "D"),
+% # 												labels=c(a, b, c, d)) +
+% # 	geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+% # 	theme(legend.position = "bottom",
+% # 				legend.title = element_text(size = 10),
+% # 				legend.text = element_text(size = 8),
+% # 			plot.title = element_text(size = 12),
+% # 			axis.title = element_text(size = 12)) + labs(y = "score") +
+% # expand_limits(x=c(1,13), y=c(3.5, 5.5)) +
+% # scale_x_discrete(name = "visit",
+% # 								 limits = factor(c(1,2,3,4,5,6,7,8,9,10,11,12,13)))
+% @
+% \caption{Trajectory of scores with 10\% random deletion for for four partitions (post imputation) with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}. Indicated between vertical red lines are the northern hemisphere winter season.}\label{postABCDtp}
+% \end{figure}
+
+% \begin{figure}
+% <<kmlrobust20, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, fig.height=3, fig.width=6, fig.align="centre">>=
+% knitr::include_graphics("../Figures/postABCDtwentyp.png")
+% # a = paste( "A", " (", twentypkml4counts0$n[1], ")", sep = "")
+% # b = paste( "B", " (", twentypkml4counts0$n[2], ")", sep = "")
+% # c = paste( "C", " (", twentypkml4counts0$n[3], ")", sep = "")
+% # d = paste( "D", " (", twentypkml4counts0$n[4], ")", sep = "")
+% # # load("../Data/df_twentypercentloss0.Rda")
+% # # df_twentypercentloss0˚
+% # ggplot(df_twentypercentloss0, aes(x = visit, y = meanPDheel.y, group = kmlclusters4, colour = kmlclusters4)) +
+% # 	geom_smooth(method = "loess") +
+% # 	labs(y = "score") +
+% # 	scale_colour_discrete(name = "Post imputation\n 20% loss partitions (n)", breaks = c("A", "B", "C", "D"),
+% # 												labels=c(a, b, c, d)) +
+% # 	geom_vline(xintercept = c(6, 9), colour = "red", linetype = "dotted") +
+% # 	theme(legend.position = "bottom") +
+% # 	expand_limits(x=c(1,13), y=c(3.5, 5)) +
+% # 	scale_x_discrete(name = "visit",
+% # 									 limits = factor(c(1,2,3,4,5,6,7,8,9,10,11,12,13)))
+% 
+% @
+% \caption{Trajectory of scores with 20\% random deletion for four partitions (post imputation) with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}. Indicated between vertical red lines are the northern hemisphere winter season. }\label{postABCDtwentyp}
+% \end{figure}
+
+\clearpage

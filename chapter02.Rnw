@@ -1,0 +1,103 @@
+% LaTeX file for Chapter 02
+<<'preamble02',include=FALSE>>=
+load("../Data/df.Rda")
+library(knitr)
+opts_chunk$set(
+    fig.path='figure/ch02_fig',
+    self.contained=FALSE,
+    cache=!FALSE
+)
+@
+
+\chapter{Materials and Methods}
+
+\section{Description of variables}
+
+To perform the analysis of risk factor on pododermatitis, nine variables were evaluated where four were continuous and the other five had their respective factor levels. These included claw length, relative humidity, temperature, age, weight, cleanliness, moisture and barn areas. Environmental factors affect mid-paw scores and not mean heel scores as seen in the directed acyclic graph \citep{Ruchti_2019} however they were nontheless included to measure a possible effect.
+
+\begin{figure}
+<<haus, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, fig.height=3, fig.width=7>>=
+knitr::include_graphics("../Figures/ch01_figpodovisual.pdf")
+@
+\caption{Visual analogue scale of pododermatitis taken from \citet{Ruchti_2019}. The disease were originally scored between 1 to 10 as seen at the inferior side of the above table. The location of scoring is shown in the bottom-left corner. }\label{podovisual}
+\end{figure}
+
+\begin{figure}
+\centering
+<<visualdeets, results='asis', warning=FALSE, message=FALSE, error=FALSE, echo=FALSE, fig.height=2, fig.width=3, fig.align="centre">>=
+knitr::include_graphics("../Figures/scoredescriptives.pdf")
+@
+\caption{Descriptives of pododermatitis score by visual analogue scale in Figure~\ref{podovisual} by \citet{Drescher_1996} taken from \citet{Ruchti_2019}.}\label{visualdeets}
+\end{figure}
+
+\subsection{Scoring, moisture of paws and claw length}
+
+Pododermatitis is localized in the heel and mid-paw plantar region of hind paws which are scored on a visual analogue scale \citep{Drescher_1996} as seen in Figure~\ref{podovisual} and described by Figure~\ref{visualdeets}. Severe pain is understood to be experienced at score 4 and progressively toward score 6 \citep{Ruchti_2019}. The paws' moisture is assessed with three ordinal levels: dry, moist and wet on the front and hind limbs bilaterally. Claw length was measured bilaterally on the hind paws only and categorised as ``normal'' or ``too long''.
+
+\subsection{Temperature, relative humidity, age, weight and hybrid}
+% Ear Tags % Temperature and humidity % Moisture of paws
+Temperature was recorded in degrees celcius and relative humidity in percentages. 
+% were \Sexpr{dim(unique(df$EarTag))[1]} Ear Tags per farm, and there
+The does were of three different breeds; Hycole, Hyla and the interbreed to both, Hylamax. The distribution is seen in Table~\ref{hybridvisit} and \ref{hybridarea} in the Appendix section. Most does from barn 1 belong to the Hyla breed. Hycole is highly represented in barn 4 and almost evenly distributed in barns 2 and 3 which are exclusively in farm 13. 
+% Hycole and Hyla breeds were represented in all time points,
+% Hylamax were few from time point 3 (October 2016) onward, as seen in Table~\ref{hybridvvisit} in the Appendix section.
+% Hyla is concentrated only in barn 1, Hycole across all barns and Hylamax only in barns 1 to 3, however the distribution is disproportionate as see in Table~\ref{hybridarea}.
+Age is recorded in months and weight in kilograms (kg) to the nearest second decimal place. 
+
+\section{Statistical analysis}
+
+Data was read from an excel file provided by the authors of the precedent study, by using \texttt{readxl} \citep{pkg:readxl}. Statistical analyses were performed by \Sexpr{version$version.string} \citep{R}. The data transformation to wide form was done by functions by \texttt{tidyverse} \citep{pkg:tidyverse} and \texttt{base R}. Missing values were replaced by means through function \texttt{imputation} by package \texttt{longitudinalData} \citep{pkg:longitudinalData}. Visualisations were performed by package \texttt{ggplot2} \citep{pkg:ggplot2}.
+
+A mosaic plot is a graphical summary of the conditional distributions in a contingency table and graphically plots two or more qualitative variables. Mosaic plots were created with the package \texttt{ggmosaic} \citep{pkg:ggmosaic}.
+
+An exploratory data analysis was performed on risk factors guided by the precedent study \citep{Ruchti_2018} and their mean, median and standard deviation were stratified by area and by visit. Trends of continuous variables were graphed with \texttt{loess} smoothing with banding of its time-point standard error, based on t-approximation \citep{pkg:ggplot2}. A linear mixed model was performed using the \texttt{lmer} (\citet{pkg:lme4} and \citet{pkg:lmerTest}) and the covariates included were risk factors indicated by the precedent study. This model treated individual rabbit (variable ear tag) and mid foot scores as random variables. The mixed model analysis also included a random intercept on age per ear tag. This mixed model was applied to the unclustered population followed by the two and four clusters created by \texttt{kml}.
+
+After \texttt{kml} partitioning was performed, generalised logistic regression was compared of the two and four parition case to understand if these partitions are different with respect to variables associated with pododermatitis scores.
+
+% with colour schemes by package \texttt{viridis} \citep{pkg:viridis} and \texttt{RColorBrewer} \citep{pkg:RColorBrewer}.
+
+\section{Initialisation of \texttt{kml} implementation}
+
+The following order of events were required prior to kml implementation:
+
+\begin{enumerate}
+% \centering
+\item Creating a wide form data frame with each time point as a column.
+\item Maintaining only unique identification of does with the column as time points. This is called a \texttt{traj} object. Ensuring this is of class \texttt{matrix}. Missing values are created as not all does are evaluated at every time point in the study.
+\item Imputation using the \texttt{trajMean} option, where missing values are replaced by mean of an individual does' trajectory.
+\item Inputting (2) into \texttt{cld} or \texttt{clusteringLongdata} command to create a \texttt{cld} object.
+\item The \texttt{cld} objet is ready for \texttt{kml} implementation.
+\end{enumerate}
+
+\section{Implementation of \texttt{kml}}
+
+The following order of events were required for kml implementation:
+
+\begin{enumerate}
+% \centering
+ \item The \texttt{cld} object was used in the \texttt{kml} implementation using \texttt{fastkml} mode, a \texttt{C}-programmed computation. The option ``nbCluster'' was given values of 2 and 4 to obtain optimal 2 and 4 partitions. No other options were chosen.
+\item Ensuring the wide form data frame is of class \texttt{data frame}, we create a column where the \texttt{kml} implementation will allocate a cluster category (e.g. A, B, C, D for four partitians) per individual doe or (per row).
+\item \texttt{getCluster} command was implemented to (1) and provided the input for the afore mentioned column created. At this point, \texttt{kml} partitioning is complete.
+\end{enumerate}
+
+The \texttt{kml} implementation required creation of \texttt{clusterLongdata} objects, which involved a wide-form class \texttt{matrix} input with time as column variables. As the individual does' trajectories are not all of time points 1 to 13, creating wide-form inputs revealed missing values which were imputated using the \texttt{trajmean} from the \texttt{kml} package \citep{Genolini_2010}. In theory, \texttt{trajmean} replaces the missing $x_{ij}$ observation by the average of the values of that individual's trajectory, for example, by the mean of $\boldsymbol{x}_{.j}$. The observation $x$ being the score per $i$th time point of individual $j$.
+
+The number of clusters were determined to be two and four and no random starting value was initialised on the mean scores of rabbits' left and right heels. In the \texttt{kml}, I chose two and four optimal partitions using the \texttt{nbClusters} option. I specified the default number of redrawings to find optimal partitions, and this was 20 as set by the package itself, \citep{Genolini_2010}. The Euclidean distance between individuals was default and used in this implementation.
+
+The partitioned or clustered data set by \texttt{kml} implementation shall be referred to as either two and four partitians.
+
+This study used two implementations of \texttt{kml}, however once the trajectories were visualised in the slow setting, the \texttt{fastkml} was used to generate $k$-means partitions. The \texttt{slowkml} is programmed by R and graphically displays the partioning process. The \texttt{fastkml} implementation is optimised in C which is approximately 25 times faster than \texttt{slowkml} \citep{Genolini_2010}. After the number of centroids per time point were randomly assigned by the implementation. The Euclidian distance were maximized between these points. This occured for each time point simultaneously. The \texttt{kml} chooses the partitian by maximising the determinant of the matrixes between time points. The trajectory is formed when the algorithm has reached maximum iterations of 20 which is a setting within the \texttt{kml} package \citep{Genolini_2010}.
+
+Clusters when implemented are temporarily saved in the cluster object, where clusters can be obtained at the completion of this partitioning, even if halted midway. From these clusters, I described the mean, standard deviation and sample size per cluster. I compared these two and four partitians in a concordance matrix to each barn area as well.
+
+To improve the understanding of \texttt{kml} partitions, visual inspections were performed on risk factors identified by the predecent study; age, weight, area, claw length (categorical), moisture (categorical), cleanliness (categorical), reproductive state (categorical), relative humidity and temperature.
+
+\section{Robustness of \texttt{kml}}
+
+To ensure that the \texttt{kml} used for the two and four partitians were robust, that is, it achieves a consistent numerical convergence, I randomly created systematic random deletion of data and compared the patterns of trajectory to each magnitude of random deletion and to the scenario where no loss of data were observed.
+
+Random deletions of magnitude 1\%, 5\%, 10\% and 20\% were implemented at two different stages prior to visual inspections and analysis.
+
+When the random deletions were implemented on the original data set, \texttt{kml} algorithm was performed thereafter. This analysis is referred to as as ``pre imputation''. When the random deletions were implemented on the original data set, the \texttt{kml} algorithm was performed thereafter. This analysis is referred to as as ``post imputation''.
+
+For both cases, this meant that some trajectories were removed and or entire individual rabbits were removed, as such entire trajectories were no longer present.

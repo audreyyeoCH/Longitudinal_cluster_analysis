@@ -1,0 +1,17 @@
+% LaTeX file for Chapter 05
+<<'preamble05',include=FALSE>>=
+library(knitr)
+load("../Data/df.Rda")
+load("../Data/df_longdf.Rda")
+library(lme4)
+opts_chunk$set(
+    fig.path='figure/ch05_fig', 
+    self.contained=FALSE,
+    cache=TRUE
+) 
+@
+
+\chapter{Conclusions}
+
+A common lifestyle related disease among rabbits are pressure sores on hocks and feets, otherwise known as pododermatitis \citet{Mancinelli_2014}. As clinicians approximate several factors that contribute to this condition, this study performed analysis on whether disease scores improve or worsen over time, and if risk factors identified from a precedent study can explain this \citep{Ruchti_2019}. A $k$-means clustering method from \texttt{R} package \texttt{kml} was applied to a data set to create two and four kml clusters or partitions. Mixed modeling on these scenarios showed that some risk factors previously identified by clinicians had evidence of significant impact such as time. The \texttt{kml} method was able to show clear separation of trajectories, albeit from imputated data, which, with fuller original trajectories, may be why it could be useful for further research in pododermatitis, including the fate of bucks versus does. 
+\clearpage
