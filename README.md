@@ -1,5 +1,7 @@
 # MSci Biostatistics, University of Zurich, Defence Aug 26 2020.
 
+With special acknowledgement to Dr Roman Flury
+
 Research Aims
 
 1. What are the covariates that influence the evolution of disease state of Pododermatitis ?
